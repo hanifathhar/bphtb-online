@@ -1,0 +1,227 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ======================================================
+// TABEL ADMIN / PENGGUNA
+// ======================================================
+
+model Admin {
+  id         Int       @id @default(autoincrement())
+  nmPengguna String?   @map("nm_pengguna") @db.VarChar(100)
+  username   String    @unique @db.VarChar(100)
+  password   String    @db.VarChar(255)
+  email      String?   @db.VarChar(100)
+  level      Int?      @default(1) // 1: Admin, 2: Loket, 3: Verif1, 4: Verif2, 5: Verif3, 6: Bank, 7: PPAT
+  status     Int       @default(1) // 1: Aktif, 0: Nonaktif
+  dateCreate DateTime? @default(now()) @map("date_create")
+  lockUser   Int       @default(0) @map("lock_user")
+  baned      String?   @default("N") @db.VarChar(2) // N: Tidak, Y: Banned
+  logintime  Int?      @default(0)
+  roleName   String?   @map("role_name") @db.VarChar(50)
+
+  @@index([username])
+  @@index([level])
+  @@map("admin")
+}
+
+// ======================================================
+// MASTER DATA
+// ======================================================
+
+model MsKeperluan {
+  id          Int     @id @default(autoincrement())
+  kode        String  @unique @db.VarChar(10)
+  keterangan  String  @db.VarChar(100)
+
+  @@map("ms_keperluan")
+}
+
+model MsStatus {
+  id     Int     @id @default(autoincrement())
+  kode   Int     @unique
+  status String  @db.VarChar(100)
+
+  @@map("ms_status")
+}
+
+model MsTransaksi {
+  id           Int      @id @default(autoincrement())
+  jnsTransaksi Int      @unique @map("jns_transaksi")
+  keterangan   String   @db.VarChar(100)
+  nopptkp      Decimal? @default(0) @db.Decimal(18, 2)
+  tarif        Decimal? @default(5.00) @db.Decimal(5, 2)
+
+  @@map("ms_transaksi")
+}
+
+model MsPejabat {
+  id        Int      @id @default(autoincrement())
+  kode      String   @unique @db.VarChar(50) // e.g. "KEPALA_BADAN", "KABID_PENETAPAN"
+  nama      String   @db.VarChar(150)
+  nip       String   @db.VarChar(50)
+  jabatan   String   @db.VarChar(200) // e.g. "KEPALA BADAN PENGELOLAAN KEUANGAN, PENDAPATAN DAN ASET DAERAH"
+  pangkat   String?  @db.VarChar(100) // e.g. "Pembina Utama Muda (IV/c)"
+  status    Int      @default(1) // 1: Aktif, 0: Nonaktif
+  kota      String?  @default("Sipirok") @db.VarChar(100)
+
+  @@map("ms_pejabat")
+}
+
+model TblKecamatan {
+  id          Int       @id @default(autoincrement())
+  idKecamatan String    @unique @map("id_kecamatan") @db.VarChar(10)
+  kecamatan   String    @db.VarChar(100)
+  idKabKota   String?   @map("id_kab_kota") @db.VarChar(10)
+
+  desas       TblDesa[]
+
+  @@index([idKecamatan])
+  @@map("tbl_kecamatan")
+}
+
+model TblDesa {
+  id            Int          @id @default(autoincrement())
+  idKecamatan   String       @map("id_kecamatan") @db.VarChar(10)
+  idDesa        String       @unique @map("id_desa") @db.VarChar(15)
+  kelurahanDesa String       @map("kelurahan_desa") @db.VarChar(100)
+
+  kecamatan     TblKecamatan? @relation(fields: [idKecamatan], references: [idKecamatan], onDelete: Cascade)
+
+  @@index([idKecamatan])
+  @@index([idDesa])
+  @@map("tbl_desa")
+}
+
+// ======================================================
+// TRANSAKSI BPHTB
+// ======================================================
+
+model TblBphtb {
+  idBerkas  Int       @id @default(autoincrement()) @map("id_berkas")
+  noBerkas  String?   @unique @map("no_berkas") @db.VarChar(50)
+  tglBerkas DateTime? @default(now()) @map("tgl_berkas")
+
+  nop       String?   @db.VarChar(100)
+
+  // Data Wajib Pajak (Penjual / Pemilik Lama)
+  namaWp      String? @map("nama_wp") @db.VarChar(100)
+  nikWp       String? @map("nik_wp") @db.VarChar(50)
+  alamatWp    String? @map("alamat_wp") @db.VarChar(255)
+  kelurahanWp String? @map("kelurahan_wp") @db.VarChar(255)
+  kecamatanWp String? @map("kecamatan_wp") @db.VarChar(255)
+  kotaWp      String? @map("kota_wp") @db.VarChar(255)
+  npwpWp      String? @map("npwp_wp") @db.VarChar(100)
+  kodePosWp   String? @map("kode_pos_wp") @db.VarChar(20)
+  rtWp        String? @map("rt_wp") @db.VarChar(10)
+  rwWp        String? @map("rw_wp") @db.VarChar(10)
+  telpWp      String? @map("telp_wp") @db.VarChar(50)
+
+  // Data Objek Pajak
+  lokasiOp          String?  @map("lokasi_op") @db.VarChar(255)
+  kelurahanOp       String?  @map("kelurahan_op") @db.VarChar(255)
+  kecamatanOp       String?  @map("kecamatan_op") @db.VarChar(255)
+  kotaOp            String?  @map("kota_op") @db.VarChar(255)
+  rtOp              String?  @map("rt_op") @db.VarChar(10)
+  rwOp              String?  @map("rw_op") @db.VarChar(10)
+  luasBumi          Decimal? @default(0) @map("luas_bumi") @db.Decimal(15, 2)
+  luasBangunan      Decimal? @default(0) @map("luas_bangunan") @db.Decimal(15, 2)
+  njopBumi          Decimal? @default(0) @map("njop_bumi") @db.Decimal(15, 2)
+  njopBangunan      Decimal? @default(0) @map("njop_bangunan") @db.Decimal(15, 2)
+  totalNjopBumi     Decimal? @default(0) @map("total_njop_bumi") @db.Decimal(18, 2)
+  totalNjopBangunan Decimal? @default(0) @map("total_njop_bangunan") @db.Decimal(18, 2)
+  nilaiPbb          Decimal? @default(0) @map("nilai_pbb") @db.Decimal(18, 2)
+
+  // Data Wajib Pajak Baru (Pembeli / Penerima Hak)
+  namaWpBaru      String? @map("nama_wp_baru") @db.VarChar(100)
+  nikWpBaru       String? @map("nik_wp_baru") @db.VarChar(50)
+  alamatWpBaru    String? @map("alamat_wp_baru") @db.VarChar(255)
+  rtWpBaru        String? @map("rt_wp_baru") @db.VarChar(10)
+  rwWpBaru        String? @map("rw_wp_baru") @db.VarChar(10)
+  kelurahanWpBaru String? @map("kelurahan_wp_baru") @db.VarChar(255)
+  kecamatanWpBaru String? @map("kecamatan_wp_baru") @db.VarChar(255)
+  kotaWpBaru      String? @map("kota_wp_baru") @db.VarChar(255)
+  npwpWpBaru      String? @map("npwp_wp_baru") @db.VarChar(100)
+  kodePosWpBaru   String? @map("kode_pos_wp_baru") @db.VarChar(20)
+  telpWpBaru      String? @map("telp_wp_baru") @db.VarChar(50)
+
+  // Transaksi BPHTB
+  keterangan     String?  @db.Text
+  jnsTransaksi   String?  @map("jns_transaksi") @db.VarChar(20)
+  nilaiTransaksi Decimal? @default(0) @map("nilai_transaksi") @db.Decimal(18, 2)
+  npop           Decimal? @default(0) @db.Decimal(18, 2)
+  npoptkp        Decimal? @default(0) @db.Decimal(18, 2)
+  npopkp         Decimal? @default(0) @db.Decimal(18, 2)
+  tarif          Decimal? @default(5.00) @db.Decimal(5, 2)
+  bphtb          Decimal? @default(0) @db.Decimal(18, 2)
+
+  nilaiSudahDibayar Decimal? @default(0) @map("nilai_sudah_dibayar") @db.Decimal(18, 2)
+  nilaiBelumDibayar Decimal? @default(0) @map("nilai_belum_dibayar") @db.Decimal(18, 2)
+
+  // Entry Metadata
+  entry    String?   @db.VarChar(100)
+  tglEntry DateTime? @default(now()) @map("tgl_entry")
+
+  // Kohir / SKP / STS
+  kdKohir String?   @map("kd_kohir") @db.VarChar(50)
+  tglSkp  DateTime? @map("tgl_skp")
+  noSts   String?   @map("no_sts") @db.VarChar(50)
+  tahun   String?   @db.VarChar(4)
+
+  // Verifikasi 1 (Staf / Pemeriksa Lapangan) - 0: Draft/Menunggu, 1: Disetujui, 2: Ditolak/Revisi
+  verif1     Int       @default(0)
+  userVerif1 String?   @map("user_verif1") @db.VarChar(100)
+  tglVerif1  DateTime? @map("tgl_verif1")
+  ketVerif1  String?   @map("ket_verif1") @db.VarChar(255)
+
+  // Verifikasi 2 (Kasi / Pemeriksa Teknis) - 0: Menunggu, 1: Disetujui, 2: Ditolak/Revisi
+  verif2     Int       @default(0)
+  userVerif2 String?   @map("user_verif2") @db.VarChar(100)
+  tglVerif2  DateTime? @map("tgl_verif2")
+  ketVerif2  String?   @map("ket_verif2") @db.VarChar(255)
+
+  // Verifikasi 3 (Kabid / Penetapan) - 0: Menunggu, 1: Disetujui, 2: Ditolak/Revisi
+  verif3     Int       @default(0)
+  userVerif3 String?   @map("user_verif3") @db.VarChar(100)
+  tglVerif3  DateTime? @map("tgl_verif3")
+  ketVerif3  String?   @map("ket_verif3") @db.VarChar(255)
+
+  // Dokumen Lampiran (Path / URL)
+  scanPernyataan String? @map("scan_pernyataan") @db.VarChar(255)
+  scanKtp        String? @map("scan_ktp") @db.VarChar(255)
+  fotoObjek      String? @map("foto_objek") @db.VarChar(255)
+  scanNpwp       String? @map("scan_npwp") @db.Text
+  scanSertifikat String? @map("scan_sertifikat") @db.VarChar(255)
+  scanPbb        String? @map("scan_pbb") @db.VarChar(255)
+
+  // Status Keseluruhan (0: Draft, 1: Verif1, 2: Verif2, 3: Verif3, 4: SKP Terbit, 5: Lunas, 9: Ditolak)
+  statusBerkas Int @default(0) @map("status_berkas")
+
+  // Pembayaran
+  statusBayar Int       @default(0) @map("status_bayar") // 0: Belum Bayar, 1: Lunas
+  tglBayar    DateTime? @map("tgl_bayar")
+  tglTempo    DateTime? @map("tgl_tempo")
+  noBuktiBayar String?  @map("no_bukti_bayar") @db.VarChar(100)
+  bankBayar   String?   @map("bank_bayar") @db.VarChar(100)
+
+  ppat        String?   @db.VarChar(100)
+  kepentingan Int?      @default(0)
+
+  @@index([idBerkas])
+  @@index([noBerkas])
+  @@index([nop])
+  @@index([tahun])
+  @@index([kdKohir])
+  @@index([statusBayar])
+  @@index([statusBerkas])
+  @@index([verif1])
+  @@index([verif2])
+  @@index([verif3])
+  @@map("tbl_bphtb")
+}
