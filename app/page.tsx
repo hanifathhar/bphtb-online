@@ -47,11 +47,16 @@ export default function LoginPage() {
         return;
       }
 
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user || {}));
+        document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+      }
+
       toast.success(`Selamat datang kembali, ${data.user.nama}!`);
       setTimeout(() => {
-        router.push("/dashboard");
-        router.refresh();
-      }, 500);
+        window.location.href = "/dashboard";
+      }, 400);
     } catch (err) {
       toast.error("Terjadi kesalahan koneksi server");
       setLoading(false);
