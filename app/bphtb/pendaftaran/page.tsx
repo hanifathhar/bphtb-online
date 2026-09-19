@@ -162,7 +162,7 @@ export default function PendaftaranBphtbPage() {
 
   // SISMIOP PBB NOP Auto-Lookup Function
   const handleLookupNop = async (queryNop?: string) => {
-    const rawTarget = (queryNop || formData.nop || "").trim();
+    const rawTarget = (queryNop || inputNopQuery || formData.nop || "").trim();
     const targetNop = rawTarget.replace(/\D/g, "");
     if (!targetNop) {
       toast.error("Masukkan NOP PBB terlebih dahulu");
@@ -338,16 +338,22 @@ export default function PendaftaranBphtbPage() {
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Masukkan NOP 18 Digit..."
+              placeholder="Masukkan NOP 18 Digit (contoh: 120310007300401740)..."
               value={inputNopQuery}
               onChange={(e) => setInputNopQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleLookupNop(inputNopQuery);
+                }
+              }}
               className="w-full pl-4 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 font-mono text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition"
             />
           </div>
           <button
             type="button"
             disabled={loadingPbb}
-            onClick={() => handleLookupNop()}
+            onClick={() => handleLookupNop(inputNopQuery)}
             className="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-red-600/20 active:scale-95 transition disabled:opacity-50"
           >
             {loadingPbb ? (
