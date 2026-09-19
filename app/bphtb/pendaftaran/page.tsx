@@ -175,7 +175,7 @@ export default function PendaftaranBphtbPage() {
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        toast.error(json.error || "Data NOP PBB tidak ditemukan di SISMIOP");
+        toast.error(json.error || "Data NOP PBB tidak ditemukan");
         setPbbDataSuccess(null);
         setLoadingPbb(false);
         return;
@@ -208,7 +208,7 @@ export default function PendaftaranBphtbPage() {
         `Data PBB Ditemukan: ${d.namaWp} (Total NJOP: Rp ${new Intl.NumberFormat("id-ID").format(d.totalNjop)})`
       );
     } catch (err: any) {
-      toast.error("Gagal terhubung ke API SISMIOP PBB: " + err.message);
+      toast.error("Gagal terhubung ke API TrustMark PBB: " + err.message);
     } finally {
       setLoadingPbb(false);
     }
@@ -312,7 +312,7 @@ export default function PendaftaranBphtbPage() {
             Formulir Pendaftaran Berkas BPHTB
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Terintegrasi langsung dengan Database SISMIOP PBB Pemkab Tapanuli Selatan untuk penarikan data NOP & NJOP secara instan.
+            Terintegrasi langsung dengan Database PBB Pemkab Tapanuli Selatan untuk penarikan data NOP & NJOP secara instan.
           </p>
         </div>
       </div>
@@ -325,7 +325,7 @@ export default function PendaftaranBphtbPage() {
               <Database size={16} />
             </span>
             <h3 className="font-bold text-sm sm:text-base text-slate-900">
-              Tarik Data Otomatis dari SISMIOP PBB
+              Tarik Data Otomatis dari PBB
             </h3>
           </div>
           <p className="text-xs text-slate-500">
@@ -359,7 +359,7 @@ export default function PendaftaranBphtbPage() {
             {loadingPbb ? (
               <>
                 <RefreshCw size={16} className="animate-spin" />
-                <span>Menghubungkan SISMIOP...</span>
+                <span>Menghubungkan TrustMark PBB...</span>
               </>
             ) : (
               <>
@@ -376,7 +376,7 @@ export default function PendaftaranBphtbPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-bold text-emerald-800">
                 <CheckCircle2 size={16} className="text-emerald-600" />
-                <span>Data SISMIOP PBB Berhasil Ditarik & Sinkron!</span>
+                <span>Data PBB Berhasil Ditarik & Sinkron!</span>
               </div>
               <span className="font-mono text-[11px] text-emerald-800 font-bold">
                 NOP: {pbbDataSuccess.nop}
@@ -417,22 +417,20 @@ export default function PendaftaranBphtbPage() {
               <div key={s.num} className="flex items-center flex-1">
                 <button
                   onClick={() => setStep(s.num)}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition text-xs font-bold ${
-                    isCurrent
-                      ? "bg-red-50 text-red-700 border border-red-200 shadow-xs"
-                      : isPassed
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition text-xs font-bold ${isCurrent
+                    ? "bg-red-50 text-red-700 border border-red-200 shadow-xs"
+                    : isPassed
                       ? "text-emerald-700 hover:bg-slate-50"
                       : "text-slate-500 hover:text-slate-600"
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
-                      isCurrent
-                        ? "bg-red-600 text-white shadow-xs"
-                        : isPassed
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${isCurrent
+                      ? "bg-red-600 text-white shadow-xs"
+                      : isPassed
                         ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                         : "bg-slate-100 text-slate-500"
-                    }`}
+                      }`}
                   >
                     {isPassed ? <CheckCircle2 size={15} /> : s.num}
                   </div>
@@ -440,9 +438,8 @@ export default function PendaftaranBphtbPage() {
                 </button>
                 {idx < stepsList.length - 1 && (
                   <div
-                    className={`h-0.5 flex-1 mx-2 ${
-                      step > s.num ? "bg-emerald-300" : "bg-slate-200"
-                    }`}
+                    className={`h-0.5 flex-1 mx-2 ${step > s.num ? "bg-emerald-300" : "bg-slate-200"
+                      }`}
                   />
                 )}
               </div>
@@ -463,12 +460,12 @@ export default function PendaftaranBphtbPage() {
                   Data Wajib Pajak (Pemilik / Penjual Lama di SPPT PBB)
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Data identitas pemilik lama terisi otomatis dari integrasi NOP SISMIOP PBB.
+                  Data identitas pemilik lama terisi otomatis dari integrasi NOP PBB.
                 </p>
               </div>
               {pbbDataSuccess && (
                 <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
-                  <Check size={12} /> Terverifikasi SISMIOP
+                  <Check size={12} /> Terverifikasi Aplikasi PBB Pemda
                 </span>
               )}
             </div>
