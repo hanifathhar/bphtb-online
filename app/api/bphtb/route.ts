@@ -112,8 +112,18 @@ export async function POST(req: Request) {
 
     const npopkp = Math.max(0, npop - npoptkp);
     const tarif = parseFloat(body.tarif || 5.0);
-    const bphtb = (npopkp * tarif) / 100;
+
+    const isSkpdkb = body.jenisKetetapan === "SKPDKB";
+    const nilaiKurangBayar = parseFloat(body.nilaiKurangBayar || 0);
+    const dendaKurangBayar = parseFloat(body.dendaKurangBayar || 0);
+    const bphtb = isSkpdkb ? (nilaiKurangBayar + dendaKurangBayar) : ((npopkp * tarif) / 100);
     const cleanNop = body.nop ? String(body.nop).replace(/\D/g, "") : null;
+
+    let finalKeterangan = body.keterangan || "";
+    if (isSkpdkb) {
+      const skpdkbInfo = `[SKPDKB] Pokok Kurang Bayar: Rp ${new Intl.NumberFormat("id-ID").format(nilaiKurangBayar)}, Sanksi Denda/Bunga: Rp ${new Intl.NumberFormat("id-ID").format(dendaKurangBayar)}${body.alasanKurangBayar ? ` (${body.alasanKurangBayar})` : ""}`;
+      finalKeterangan = finalKeterangan ? `${skpdkbInfo} - ${finalKeterangan}` : skpdkbInfo;
+    }
 
     const created = await prisma.tblBphtb.create({
       data: {
@@ -163,7 +173,7 @@ export async function POST(req: Request) {
         telpWpBaru: body.telpWpBaru,
 
         // Transaksi & Perhitungan
-        keterangan: body.keterangan,
+        keterangan: finalKeterangan,
         jnsTransaksi: body.jnsTransaksi ? String(body.jnsTransaksi) : "1",
         nilaiTransaksi,
         npop,

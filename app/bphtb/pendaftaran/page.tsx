@@ -23,6 +23,8 @@ import {
   Sparkles,
   Check,
   AlertCircle,
+  AlertTriangle,
+  Receipt,
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -92,6 +94,12 @@ export default function PendaftaranBphtbPage() {
     ppat: "",
     kepentingan: 1,
     keterangan: "",
+
+    // SKPDKB (Kurang Bayar) Feature
+    jenisKetetapan: "SKPD", // "SKPD" | "SKPDKB"
+    nilaiKurangBayar: 0,
+    dendaKurangBayar: 0,
+    alasanKurangBayar: "",
 
     // Step 5: Dokumen
     scanKtp: "ktp_pemohon.pdf",
@@ -240,7 +248,15 @@ export default function PendaftaranBphtbPage() {
   const npoptkp = Number(formData.npoptkp) || 0;
   const npopkp = Math.max(0, npop - npoptkp);
   const tarif = Number(formData.tarif) || 5.0;
-  const bphtbTerutang = (npopkp * tarif) / 100;
+  const bphtbStandar = (npopkp * tarif) / 100;
+
+  // Jika SKPDKB, nilai BPHTB adalah Pokok Kurang Bayar + Denda/Bunga
+  const isSkpdkb = formData.jenisKetetapan === "SKPDKB";
+  const nilaiKurangBayar = Number(formData.nilaiKurangBayar) || 0;
+  const dendaKurangBayar = Number(formData.dendaKurangBayar) || 0;
+  const totalSkpdkb = nilaiKurangBayar + dendaKurangBayar;
+
+  const bphtbTerutang = isSkpdkb ? totalSkpdkb : bphtbStandar;
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -272,6 +288,10 @@ export default function PendaftaranBphtbPage() {
           npopkp,
           tarif,
           bphtb: bphtbTerutang,
+          jenisKetetapan: formData.jenisKetetapan,
+          nilaiKurangBayar: isSkpdkb ? nilaiKurangBayar : 0,
+          dendaKurangBayar: isSkpdkb ? dendaKurangBayar : 0,
+          alasanKurangBayar: isSkpdkb ? formData.alasanKurangBayar : null,
         }),
       });
 
@@ -884,15 +904,57 @@ export default function PendaftaranBphtbPage() {
         {/* STEP 4: TRANSAKSI & PERHITUNGAN */}
         {step === 4 && (
           <div className="space-y-6">
-            <div className="border-b border-slate-200 pb-3">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Calculator size={20} className="text-amber-600" />
-                Data Transaksi & Perhitungan Pajak BPHTB
-              </h2>
-              <p className="text-xs text-slate-500">
-                Pilih jenis perolehan hak, nilai transaksi pasar, dan kalkulasi otomatis.
-              </p>
+            <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Calculator size={20} className="text-amber-600" />
+                  Data Transaksi & Perhitungan Pajak BPHTB
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Pilih jenis perolehan hak, jenis ketetapan (SKPD Standar / Kurang Bayar), dan kalkulasi otomatis.
+                </p>
+              </div>
+
+              {/* Jenis Ketetapan Switcher */}
+              <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, jenisKetetapan: "SKPD" })}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    formData.jenisKetetapan === "SKPD"
+                      ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  SKPD Standar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, jenisKetetapan: "SKPDKB" })}
+                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+                    formData.jenisKetetapan === "SKPDKB"
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "text-amber-700 hover:text-amber-900"
+                  }`}
+                >
+                  <AlertCircle size={13} />
+                  <span>SKPDKB (Kurang Bayar)</span>
+                </button>
+              </div>
             </div>
+
+            {/* Banner Khusus SKPDKB */}
+            {isSkpdkb && (
+              <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-300 text-amber-900 text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-amber-800">
+                  <AlertCircle size={16} className="text-amber-600" />
+                  <span>Mode Penerbitan SKPDKB (Surat Ketetapan Pajak Daerah Kurang Bayar)</span>
+                </div>
+                <p className="text-amber-700">
+                  Masukkan nilai pokok ketetapan kurang bayar serta sanksi bunga/denda administrasi yang ditagihkan kepada Wajib Pajak.
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
               {/* Inputs */}
@@ -929,6 +991,69 @@ export default function PendaftaranBphtbPage() {
                   </p>
                 </div>
 
+                {/* Manual Input Fields for SKPDKB */}
+                {isSkpdkb && (
+                  <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-3">
+                    <h4 className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                      <Receipt size={14} className="text-amber-700" />
+                      Rincian Pokok Kurang Bayar & Sanksi Denda
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          Pokok BPHTB Kurang Bayar (Rp) *
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={formData.nilaiKurangBayar || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              nilaiKurangBayar: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-amber-300 text-slate-900 font-mono font-bold text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          Sanksi Administrasi / Bunga / Denda (Rp)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={formData.dendaKurangBayar || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              dendaKurangBayar: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-amber-300 text-slate-900 font-mono font-bold text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Alasan / Dasar Penerbitan SKPDKB
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Hasil pemeriksaan lapangan / koreksi luas tanah dan NJOP"
+                        value={formData.alasanKurangBayar || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, alasanKurangBayar: e.target.value })
+                        }
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1.5">
                     Nama PPAT / Notaris
@@ -960,43 +1085,74 @@ export default function PendaftaranBphtbPage() {
               <div className="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
                 <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-2">
                   <Percent size={14} className="text-red-600" />
-                  Rincian Perhitungan Pajak (Rumus Perda)
+                  {isSkpdkb ? "Rincian Ketetapan SKPDKB (Kurang Bayar)" : "Rincian Perhitungan Pajak (Rumus Perda)"}
                 </h4>
 
                 <div className="space-y-2.5 text-xs font-medium">
-                  <div className="flex justify-between items-center text-slate-500">
-                    <span>Total NJOP PBB (Sistem):</span>
-                    <span className="text-slate-800">{formatRupiah(totalNjop)}</span>
-                  </div>
+                  {!isSkpdkb ? (
+                    <>
+                      <div className="flex justify-between items-center text-slate-500">
+                        <span>Total NJOP PBB (Sistem):</span>
+                        <span className="text-slate-800">{formatRupiah(totalNjop)}</span>
+                      </div>
 
-                  <div className="flex justify-between items-center text-slate-500">
-                    <span>Nilai Transaksi Pasar:</span>
-                    <span className="text-slate-800">{formatRupiah(nilaiTransaksi)}</span>
-                  </div>
+                      <div className="flex justify-between items-center text-slate-500">
+                        <span>Nilai Transaksi Pasar:</span>
+                        <span className="text-slate-800">{formatRupiah(nilaiTransaksi)}</span>
+                      </div>
 
-                  <div className="flex justify-between items-center p-2 rounded-lg bg-white border border-slate-200 font-semibold text-red-700">
-                    <span>NPOP (Dasar Pengenaan):</span>
-                    <span>{formatRupiah(npop)}</span>
-                  </div>
+                      <div className="flex justify-between items-center p-2 rounded-lg bg-white border border-slate-200 font-semibold text-red-700">
+                        <span>NPOP (Dasar Pengenaan):</span>
+                        <span>{formatRupiah(npop)}</span>
+                      </div>
 
-                  <div className="flex justify-between items-center text-slate-500">
-                    <span>NPOPTKP (Tidak Kena Pajak):</span>
-                    <span className="text-rose-700">- {formatRupiah(npoptkp)}</span>
-                  </div>
+                      <div className="flex justify-between items-center text-slate-500">
+                        <span>NPOPTKP (Tidak Kena Pajak):</span>
+                        <span className="text-rose-700">- {formatRupiah(npoptkp)}</span>
+                      </div>
 
-                  <div className="flex justify-between items-center text-slate-700 font-semibold border-t border-slate-200/80 pt-2">
-                    <span>NPOPKP (Kena Pajak):</span>
-                    <span>{formatRupiah(npopkp)}</span>
-                  </div>
+                      <div className="flex justify-between items-center text-slate-700 font-semibold border-t border-slate-200/80 pt-2">
+                        <span>NPOPKP (Kena Pajak):</span>
+                        <span>{formatRupiah(npopkp)}</span>
+                      </div>
 
-                  <div className="flex justify-between items-center text-slate-500">
-                    <span>Tarif Pajak:</span>
-                    <span className="text-slate-800">{tarif}%</span>
-                  </div>
+                      <div className="flex justify-between items-center text-slate-500">
+                        <span>Tarif Pajak:</span>
+                        <span className="text-slate-800">{tarif}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center text-slate-500">
+                        <span>Kalkulasi Standar BPHTB:</span>
+                        <span className="text-slate-800 line-through">{formatRupiah(bphtbStandar)}</span>
+                      </div>
 
-                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-teal-500/20 via-emerald-500/10 to-transparent border border-red-200 text-red-700 mt-3">
-                    <p className="text-[11px] uppercase tracking-wider text-red-600 font-bold">
-                      BPHTB Terutang:
+                      <div className="flex justify-between items-center p-2.5 rounded-lg bg-amber-100/70 border border-amber-200 font-bold text-amber-900">
+                        <span>Pokok Kurang Bayar:</span>
+                        <span>{formatRupiah(nilaiKurangBayar)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-slate-600 font-medium">
+                        <span>Sanksi Bunga / Denda:</span>
+                        <span className="text-rose-700 font-bold">+ {formatRupiah(dendaKurangBayar)}</span>
+                      </div>
+
+                      {formData.alasanKurangBayar && (
+                        <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500 italic">
+                          <span>Catatan: {formData.alasanKurangBayar}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className={`p-3.5 rounded-xl border mt-3 ${
+                    isSkpdkb 
+                      ? "bg-amber-50 border-amber-300 text-amber-900" 
+                      : "bg-gradient-to-r from-teal-500/20 via-emerald-500/10 to-transparent border-red-200 text-red-700"
+                  }`}>
+                    <p className="text-[11px] uppercase tracking-wider font-bold">
+                      {isSkpdkb ? "Total Tagihan SKPDKB Kurang Bayar:" : "BPHTB Terutang:"}
                     </p>
                     <p className="text-xl font-black text-slate-900">
                       {formatRupiah(bphtbTerutang)}
@@ -1050,9 +1206,9 @@ export default function PendaftaranBphtbPage() {
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
               <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-red-600" />
-                Ringkasan Permohonan Berkas BPHTB (Tersinkronisasi PBB)
+                Ringkasan Permohonan Berkas BPHTB {isSkpdkb ? "(SKPDKB Kurang Bayar)" : "(Tersinkronisasi PBB)"}
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-slate-700">
                 <div>
                   <p className="text-[11px] text-slate-500">Wajib Pajak Baru:</p>
                   <p className="font-bold text-slate-900">{formData.namaWpBaru || "-"}</p>
@@ -1064,7 +1220,15 @@ export default function PendaftaranBphtbPage() {
                   <p className="text-[11px] text-slate-500">{formData.kelurahanOp}, {formData.kecamatanOp}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-slate-500">Ketetapan BPHTB Terutang:</p>
+                  <p className="text-[11px] text-slate-500">Jenis Ketetapan:</p>
+                  <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold mt-1 ${
+                    isSkpdkb ? "bg-amber-100 text-amber-800 border border-amber-300" : "bg-blue-100 text-blue-800 border border-blue-200"
+                  }`}>
+                    {isSkpdkb ? "SKPDKB (Kurang Bayar)" : "SKPD Standar"}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-500">Total Tagihan BPHTB:</p>
                   <p className="font-extrabold text-lg text-emerald-600">
                     {formatRupiah(bphtbTerutang)}
                   </p>

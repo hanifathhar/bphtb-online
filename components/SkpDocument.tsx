@@ -89,6 +89,8 @@ export default function SkpDocument({ berkas, pejabat: initialPejabat }: SkpDocu
     year: "numeric",
   }).replace(/\//g, "-");
 
+  const isSkpdkbDoc = berkas?.keterangan?.includes("[SKPDKB]") || berkas?.jenisKetetapan === "SKPDKB";
+
   return (
     <div className="skp-sheet bg-white text-black font-sans text-[11px] leading-tight p-2 sm:p-4 max-w-[210mm] mx-auto shadow-xl print:shadow-none print:m-0 print:w-full print:p-0 print:text-black">
       {/* 1. HEADER SECTION (Table-based 3 Column Layout) */}
@@ -126,9 +128,19 @@ export default function SkpDocument({ berkas, pejabat: initialPejabat }: SkpDocu
             {/* Document Title */}
             <td className="w-[48%] border-r border-black p-2.5 text-center align-middle">
               <h1 className="text-[12px] font-black uppercase tracking-wide leading-snug">
-                SURAT KETETAPAN BEA PEROLEHAN<br />
-                HAK ATAS TANAH DAN BANGUNAN<br />
-                (BPHTB)
+                {isSkpdkbDoc ? (
+                  <>
+                    SURAT KETETAPAN PAJAK DAERAH<br />
+                    KURANG BAYAR (SKPDKB)<br />
+                    BEA PEROLEHAN HAK ATAS TANAH & BANGUNAN
+                  </>
+                ) : (
+                  <>
+                    SURAT KETETAPAN BEA PEROLEHAN<br />
+                    HAK ATAS TANAH DAN BANGUNAN<br />
+                    (BPHTB)
+                  </>
+                )}
               </h1>
               <p className="text-[11px] font-black uppercase mt-1">
                 TAHUN {tahun}
@@ -203,20 +215,35 @@ export default function SkpDocument({ berkas, pejabat: initialPejabat }: SkpDocu
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b border-black">
-            <td className="border-r border-black py-2 px-2 text-center font-bold align-middle">1</td>
-            <td className="border-r border-black py-2 px-2 text-center font-mono font-bold align-middle">4111301</td>
-            <td className="border-r border-black py-2 px-3 align-middle font-medium">
-              Bea Perolehan Hak Atas Tanah dan Bangunan
-            </td>
-            <td className="py-2 px-3 text-right font-mono font-bold align-middle">
-              {formatRupiahNumber(bphtb)},00
-            </td>
-          </tr>
+          {isSkpdkbDoc ? (
+            <>
+              <tr className="border-b border-black">
+                <td className="border-r border-black py-1.5 px-2 text-center font-bold align-middle">1</td>
+                <td className="border-r border-black py-1.5 px-2 text-center font-mono font-bold align-middle">4111301</td>
+                <td className="border-r border-black py-1.5 px-3 align-middle font-medium">
+                  Pokok Pajak BPHTB Kurang Bayar (SKPDKB)
+                </td>
+                <td className="py-1.5 px-3 text-right font-mono font-bold align-middle">
+                  {formatRupiahNumber(bphtb)},00
+                </td>
+              </tr>
+            </>
+          ) : (
+            <tr className="border-b border-black">
+              <td className="border-r border-black py-2 px-2 text-center font-bold align-middle">1</td>
+              <td className="border-r border-black py-2 px-2 text-center font-mono font-bold align-middle">4111301</td>
+              <td className="border-r border-black py-2 px-3 align-middle font-medium">
+                Bea Perolehan Hak Atas Tanah dan Bangunan
+              </td>
+              <td className="py-2 px-3 text-right font-mono font-bold align-middle">
+                {formatRupiahNumber(bphtb)},00
+              </td>
+            </tr>
+          )}
           {/* Subtotal Row */}
           <tr className="border-b border-black font-bold">
             <td colSpan={3} className="border-r border-black py-1.5 px-3 text-right text-[10px] uppercase">
-              Jumlah Total Ketetapan Pajak (Rp.)
+              {isSkpdkbDoc ? "Jumlah Total Ketetapan Kurang Bayar (Rp.)" : "Jumlah Total Ketetapan Pajak (Rp.)"}
             </td>
             <td className="py-1.5 px-3 text-right font-mono">
               {formatRupiahNumber(bphtb)},00
