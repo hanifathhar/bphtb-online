@@ -97,6 +97,7 @@ export default function RekapKetetapanPage() {
     return data.filter(
       (item) =>
         item.kdKohir?.toLowerCase().includes(s) ||
+        item.noSts?.toLowerCase().includes(s) ||
         item.noBerkas?.toLowerCase().includes(s) ||
         item.nop?.toLowerCase().includes(s) ||
         item.namaWpBaru?.toLowerCase().includes(s) ||

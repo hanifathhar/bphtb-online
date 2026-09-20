@@ -189,7 +189,7 @@ export default function PembayaranBphtbPage() {
                       <td className="px-4 py-3.5">
                         <p className="font-bold text-slate-900 font-mono">{item.kdKohir || "-"}</p>
                         <p className="text-[11px] text-slate-500 font-mono">
-                          STS: {item.noSts ? formatNoSts(item.idBerkas, item.tahun, item.noSts) : "-"}
+                          STS: {item.noSts || "-"}
                         </p>
                       </td>
                       <td className="px-4 py-3.5">

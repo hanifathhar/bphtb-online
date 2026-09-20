@@ -86,10 +86,8 @@ export default function SspdDocument({
     pejabat?.nama ||
     "M. FRANANDA, S.E, M.M";
 
-  // No STS format: 2964111301 + [tahun 4 digit] + 09 + [no urut 4 digit]
-  const noStsFormatted = berkas.noSts
-    ? formatNoSts(berkas.idBerkas, berkas.tahun, berkas.noSts)
-    : ".............................................";
+  // No STS from database (no_sts)
+  const noStsFormatted = berkas.noSts || ".............................................";
 
   return (
     <div className="sspd-print-container bg-white text-black text-[11px] leading-[1.3] font-sans mx-auto p-4 border border-black max-w-[210mm] shadow-md print:shadow-none print:p-0 print:border-black print:max-w-none print:w-full">

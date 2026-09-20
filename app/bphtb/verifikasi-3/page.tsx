@@ -300,7 +300,7 @@ export default function Verifikasi3Page() {
                           <>
                             <p className="font-mono text-slate-900 font-semibold">{item.kdKohir || "-"}</p>
                             <p className="text-[11px] font-mono text-slate-500">
-                              STS: {item.noSts ? formatNoSts(item.idBerkas, item.tahun, item.noSts) : "-"}
+                              STS: {item.noSts || "-"}
                             </p>
                           </>
                         )}

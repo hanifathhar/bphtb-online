@@ -167,7 +167,7 @@ export default function KetetapanSkpPage() {
                       </td>
                       <td className="px-4 py-3.5">
                         <p className="text-slate-800 font-mono">
-                          {item.noSts ? formatNoSts(item.idBerkas, item.tahun, item.noSts) : "-"}
+                          {item.noSts || "-"}
                         </p>
                         <p className="text-[11px] text-amber-600 font-semibold">
                           Tempo: {item.tglTempo ? new Date(item.tglTempo).toLocaleDateString("id-ID") : "-"}

@@ -25,6 +25,7 @@ export async function GET(req: Request) {
         { namaWp: { contains: q, mode: "insensitive" } },
         { namaWpBaru: { contains: q, mode: "insensitive" } },
         { kdKohir: { contains: q, mode: "insensitive" } },
+        { noSts: { contains: q, mode: "insensitive" } },
       ];
     }
 

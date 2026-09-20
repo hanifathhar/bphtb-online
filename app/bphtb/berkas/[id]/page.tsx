@@ -671,9 +671,7 @@ export default function DetailBerkasPage({
               <div>
                 <p className="text-slate-500">Nomor STS (Surat Tanda Setor):</p>
                 <p className="font-bold text-slate-800 font-mono">
-                  {berkas.noSts
-                    ? formatNoSts(berkas.idBerkas, berkas.tahun, berkas.noSts)
-                    : "Menunggu Verifikasi Kabid"}
+                  {berkas.noSts || "Menunggu Verifikasi Kabid"}
                 </p>
               </div>
               <div>

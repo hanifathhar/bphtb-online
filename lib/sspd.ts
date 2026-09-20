@@ -50,8 +50,8 @@ export function formatNoSts(
   tahun?: string | number | null,
   existingNoSts?: string | null
 ): string {
-  if (existingNoSts && existingNoSts.startsWith("2964111301") && existingNoSts.length === 20) {
-    return existingNoSts;
+  if (existingNoSts && existingNoSts.trim()) {
+    return existingNoSts.trim();
   }
   const yearStr = (tahun ? String(tahun) : new Date().getFullYear().toString()).slice(0, 4);
   const numId = parseInt(String(idBerkas || 1), 10) || 1;
@@ -69,8 +69,8 @@ export function formatKdKohir(
   tahun?: string | number | null,
   existingKdKohir?: string | null
 ): string {
-  if (existingKdKohir && existingKdKohir.startsWith("9") && existingKdKohir.includes("/")) {
-    return existingKdKohir;
+  if (existingKdKohir && existingKdKohir.trim()) {
+    return existingKdKohir.trim();
   }
   const yearStr = (tahun ? String(tahun) : new Date().getFullYear().toString()).slice(0, 4);
   const numId = parseInt(String(idBerkas || 1), 10) || 1;
