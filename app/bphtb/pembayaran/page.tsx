@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Building2,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNoSts } from "@/lib/sspd";
@@ -81,6 +82,7 @@ export default function PembayaranBphtbPage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -105,6 +107,24 @@ export default function PembayaranBphtbPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncSimpatda = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/simpatda/sync-pembayaran", { method: "POST" });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(json.message || "Sinkronisasi SIMPATDA berhasil.");
+        await fetchData();
+      } else {
+        toast.error(json.error || "Gagal sinkronisasi dengan SIMPATDA.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Terjadi kesalahan koneksi saat sinkronisasi.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -232,7 +252,7 @@ export default function PembayaranBphtbPage() {
   return (
     <DashboardShell active="pembayaran">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold mb-2">
             <CreditCard size={14} /> Modul Kasir & Pembayaran Bank
@@ -245,8 +265,8 @@ export default function PembayaranBphtbPage() {
           </p>
         </div>
 
-        {/* Tab switcher & Year Filter */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Controls: Year Filter, Status Tabs & Sync Button */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <YearFilter
             selectedYear={tahun}
             onChange={(y) => {
@@ -255,28 +275,38 @@ export default function PembayaranBphtbPage() {
             }}
           />
 
-          <div className="flex bg-white border border-slate-200 rounded-2xl p-1 text-xs">
+          <div className="flex bg-white border border-slate-200 rounded-2xl p-1 text-xs shadow-xs">
             <button
               onClick={() => setFilterTab("belum")}
-              className={`px-4 py-2 rounded-xl font-bold transition ${
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition ${
                 filterTab === "belum"
-                  ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                  ? "bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
-              Siap Bayar (Belum Lunas)
+              Siap Bayar
             </button>
             <button
               onClick={() => setFilterTab("lunas")}
-              className={`px-4 py-2 rounded-xl font-bold transition ${
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition ${
                 filterTab === "lunas"
-                  ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20"
+                  ? "bg-emerald-400 text-slate-950 shadow-sm shadow-emerald-500/20"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
               Sudah Lunas
             </button>
           </div>
+
+          <button
+            onClick={handleSyncSimpatda}
+            disabled={syncing}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-xs shadow-blue-600/20 transition-all duration-150 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            title="Sinkronkan status bayar dari tabel tr_tetap SIMPATDA secara otomatis"
+          >
+            <RefreshCw size={13} className={`shrink-0 ${syncing ? "animate-spin" : ""}`} />
+            <span>{syncing ? "Menyinkronkan..." : "Sinkron SIMPATDA"}</span>
+          </button>
         </div>
       </div>
 

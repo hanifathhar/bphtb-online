@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
+import { hapusKetetapanDariSimpatda } from "@/lib/simpatda";
 
 export async function POST(
   req: Request,
@@ -35,6 +36,11 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const targetStatus = body.targetStatus || 1; // Default to 1 (Kembali ke Verifikasi 1)
     const catatan = body.catatan || "Berkas di-rollback dan diajukan kembali untuk verifikasi.";
+
+    // Hapus data penetapan dari dbsimpatda jika sebelumnya sudah diterbitkan
+    if (existing.noSts) {
+      await hapusKetetapanDariSimpatda(existing.noSts);
+    }
 
     const updated = await prisma.tblBphtb.update({
       where: { idBerkas: berkasId },

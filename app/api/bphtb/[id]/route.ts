@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
+import { sinkronStatusBayarDariSimpatda } from "@/lib/simpatda";
 
 export async function GET(
   req: Request,
@@ -10,12 +11,26 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const berkas = await prisma.tblBphtb.findUnique({
+    let berkas = await prisma.tblBphtb.findUnique({
       where: { idBerkas: parseInt(id) },
     });
 
     if (!berkas) {
       return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 404 });
+    }
+
+    // Auto-sync status pembayaran dengan SIMPATDA jika berkas sudah memiliki STS
+    if (berkas.noSts && (berkas.statusBerkas === 4 || berkas.statusBerkas === 5)) {
+      try {
+        const syncRes = await sinkronStatusBayarDariSimpatda(berkas.noSts);
+        if (syncRes.updatedToLunas > 0 || syncRes.updatedToBelumBayar > 0) {
+          berkas = await prisma.tblBphtb.findUnique({
+            where: { idBerkas: parseInt(id) },
+          });
+        }
+      } catch (syncErr) {
+        console.warn("[SIMPATDA AUTO-SYNC] Gagal sync saat get detail:", syncErr);
+      }
     }
 
     return NextResponse.json({ success: true, data: berkas });

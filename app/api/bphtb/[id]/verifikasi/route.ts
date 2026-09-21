@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
 import { formatNoSts, formatKdKohir } from "@/lib/sspd";
+import { kirimKetetapanKeSimpatda, hapusKetetapanDariSimpatda } from "@/lib/simpatda";
 
 export async function POST(
   req: Request,
@@ -80,6 +81,11 @@ export async function POST(
         updateData.noSts = null;
         updateData.tglSkp = null;
         updateData.tglTempo = null;
+
+        // Hapus dari dbsimpatda jika sebelumnya sudah diterbitkan
+        if (existing.noSts) {
+          await hapusKetetapanDariSimpatda(existing.noSts);
+        }
       } else if (verifStatus === 1) {
         updateData.verif3 = 1;
         updateData.userVerif3 = user.username || user.nama;
@@ -130,6 +136,30 @@ export async function POST(
       where: { idBerkas: berkasId },
       data: updateData,
     });
+
+    // Jika verifikasi 3 disetujui dan SKP terbit, kirim data ke dbsimpatda (tr_tetap & skp_bphtb)
+    if (tahap === 3 && verifStatus === 1 && updated.kdKohir && updated.noSts) {
+      await kirimKetetapanKeSimpatda({
+        kdKohir: updated.kdKohir,
+        tglSkp: updated.tglSkp || now,
+        noSts: updated.noSts,
+        bphtb: updated.bphtb,
+        nilaiBelumDibayar: updated.nilaiBelumDibayar ?? updated.bphtb,
+        keterangan: updated.keterangan,
+        nop: updated.nop,
+        namaWpBaru: updated.namaWpBaru,
+        namaWp: updated.namaWp,
+        alamatWpBaru: updated.alamatWpBaru,
+        alamatWp: updated.alamatWp,
+        lokasiOp: updated.lokasiOp,
+        npwpWpBaru: updated.npwpWpBaru,
+        npwpWp: updated.npwpWp,
+        tglTempo: updated.tglTempo,
+        tahun: updated.tahun,
+        username: user.username || user.nama,
+        tglUpdate: now,
+      });
+    }
 
     return NextResponse.json({
       success: true,
