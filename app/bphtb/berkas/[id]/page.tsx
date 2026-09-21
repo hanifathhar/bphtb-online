@@ -21,12 +21,15 @@ import {
   CheckSquare,
   XCircle,
   FileCheck,
-  Percent,
+  Calendar,
+  Building2,
+  AlertTriangle,
   RotateCcw,
   ShieldAlert,
   Edit,
   Trash2,
   Undo2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNoSts } from "@/lib/sspd";
@@ -38,6 +41,8 @@ export default function DetailBerkasPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const [berkas, setBerkas] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -58,9 +63,16 @@ export default function DetailBerkasPage({
 
   const [payModal, setPayModal] = useState({
     open: false,
-    bankBayar: "Bank BPD",
+    bankSelect: "Bank Sumut",
+    customBank: "",
+    tglBayar: todayStr,
     noBuktiBayar: `TRX-${Date.now().toString().slice(-6)}`,
     nilaiBayar: 0,
+  });
+
+  const [batalPayModal, setBatalPayModal] = useState({
+    open: false,
+    alasan: "",
   });
 
   const [batalModal, setBatalModal] = useState({
@@ -147,12 +159,32 @@ export default function DetailBerkasPage({
   };
 
   const handlePaymentSubmit = async () => {
+    const finalBank =
+      payModal.bankSelect === "__CUSTOM__"
+        ? payModal.customBank.trim() || "Bank Persepsi / Mitra Kasir"
+        : payModal.bankSelect;
+
+    if (!finalBank) {
+      toast.error("Silakan isi atau pilih Bank Persepsi / Kasir Penerima.");
+      return;
+    }
+
+    if (!payModal.tglBayar) {
+      toast.error("Silakan pilih tanggal pembayaran.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch(`/api/bphtb/${id}/bayar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payModal),
+        body: JSON.stringify({
+          bankBayar: finalBank,
+          tglBayar: payModal.tglBayar,
+          noBuktiBayar: payModal.noBuktiBayar || `TRX-${Date.now().toString().slice(-6)}`,
+          nilaiBayar: payModal.nilaiBayar,
+        }),
       });
 
       const data = await res.json();
@@ -167,6 +199,34 @@ export default function DetailBerkasPage({
       fetchDetail();
     } catch (err) {
       toast.error("Terjadi kesalahan server");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleBatalPaySubmit = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/bphtb/${id}/batal-bayar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alasan: batalPayModal.alasan || "Pembatalan pembayaran dari detail berkas.",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Gagal membatalkan pembayaran");
+        setSubmitting(false);
+        return;
+      }
+
+      toast.success(data.message || "Pembayaran berhasil dibatalkan. Berkas kembali Siap Bayar.");
+      setBatalPayModal({ open: false, alasan: "" });
+      fetchDetail();
+    } catch (err) {
+      toast.error("Terjadi kesalahan server saat membatalkan pembayaran");
     } finally {
       setSubmitting(false);
     }
@@ -287,6 +347,7 @@ export default function DetailBerkasPage({
   const canVerif3 = (userLevel === 1 || userLevel === 5) && berkas.statusBerkas === 3;
   const canBatalVerif3 = (userLevel === 1 || userLevel === 5) && berkas.statusBerkas === 4 && berkas.statusBayar === 0;
   const canPay = (userLevel === 1 || userLevel === 6) && berkas.statusBerkas === 4 && berkas.statusBayar === 0;
+  const canBatalPay = (userLevel === 1 || userLevel === 6) && isLunas;
 
   return (
     <DashboardShell active="berkas">
@@ -360,6 +421,16 @@ export default function DetailBerkasPage({
               title="Batalkan Verifikasi & SKP Kabid"
             >
               <RotateCcw size={15} /> Batal Verifikasi Kabid
+            </button>
+          )}
+
+          {canBatalPay && (
+            <button
+              onClick={() => setBatalPayModal({ open: true, alasan: "" })}
+              className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition"
+              title="Batalkan Pembayaran BPHTB"
+            >
+              <RotateCcw size={15} /> Batal Bayar
             </button>
           )}
 
@@ -693,23 +764,38 @@ export default function DetailBerkasPage({
             </h3>
 
             {isLunas ? (
-              <div className="p-4 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/30 space-y-2">
+              <div className="p-4 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 border-emerald-500/30 space-y-2">
                 <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-sm">
                   <CheckCircle size={16} /> LUNAS
                 </div>
-                <p className="text-slate-700">Bank / Kasir: <span className="font-semibold text-slate-900">{berkas.bankBayar || "Bank BPD"}</span></p>
+                <p className="text-slate-700">Bank / Kasir: <span className="font-semibold text-slate-900">{berkas.bankBayar || "Bank Persepsi"}</span></p>
                 <p className="text-slate-700">No. Bukti: <span className="font-mono text-red-700">{berkas.noBuktiBayar || "-"}</span></p>
                 <p className="text-slate-700">Tgl Bayar: {berkas.tglBayar ? new Date(berkas.tglBayar).toLocaleDateString("id-ID") : "-"}</p>
-                <p className="text-slate-700 font-bold">Nominal: {formatRupiah(berkas.nilaiSudahDibayar)}</p>
+                <div className="pt-2 border-t border-emerald-200 flex justify-between text-xs">
+                  <span className="text-slate-600 font-medium">Nilai Sudah Dibayar:</span>
+                  <span className="font-bold text-emerald-700">{formatRupiah(berkas.nilaiSudahDibayar || berkas.bphtb)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>Nilai Belum Dibayar:</span>
+                  <span>{formatRupiah(berkas.nilaiBelumDibayar || 0)}</span>
+                </div>
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 border border-amber-500/30 text-amber-700 space-y-1">
+              <div className="p-4 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 border-amber-500/30 text-amber-700 space-y-2">
                 <p className="font-bold text-xs flex items-center gap-1">
                   <Clock size={14} /> Belum Dibayar
                 </p>
                 <p className="text-[11px] text-slate-500">
                   Ketetapan pajak siap disetorkan ke kasir atau Bank persepsi.
                 </p>
+                <div className="pt-2 border-t border-amber-200 flex justify-between text-xs">
+                  <span className="text-slate-600 font-medium">Nilai Belum Dibayar:</span>
+                  <span className="font-bold text-amber-800">{formatRupiah(berkas.nilaiBelumDibayar ?? berkas.bphtb)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>Nilai Sudah Dibayar:</span>
+                  <span>{formatRupiah(berkas.nilaiSudahDibayar || 0)}</span>
+                </div>
               </div>
             )}
           </div>
@@ -796,33 +882,88 @@ export default function DetailBerkasPage({
 
       {/* Modal Konfirmasi Pembayaran */}
       {payModal.open && (
-        <div className="fixed inset-0 z-50 bg-slate-50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <CreditCard size={20} className="text-emerald-600" />
-              Pencatatan Pembayaran BPHTB
-            </h3>
-            <p className="text-xs text-slate-500">
-              No. Kohir: <strong className="text-cyan-700 font-mono">{berkas.kdKohir}</strong>
-            </p>
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CreditCard size={20} className="text-emerald-600" />
+                Pencatatan Pembayaran BPHTB
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPayModal({ ...payModal, open: false })}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+              <p className="text-slate-500">
+                No. Kohir: <strong className="text-cyan-700 font-mono font-bold">{berkas.kdKohir}</strong>
+              </p>
+              <p className="text-slate-500">
+                Wajib Pajak: <strong className="text-slate-900">{berkas.namaWpBaru}</strong>
+              </p>
+              <p className="text-slate-500">
+                Tagihan: <strong className="text-emerald-600 font-bold">{formatRupiah(berkas.bphtb)}</strong>
+              </p>
+            </div>
 
             <div className="space-y-3 text-xs">
+              {/* Tanggal Bayar Custom */}
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                  <Calendar size={13} className="text-emerald-600" />
+                  Tanggal Pembayaran (Custom) *
+                </label>
+                <input
+                  type="date"
+                  value={payModal.tglBayar}
+                  onChange={(e) => setPayModal({ ...payModal, tglBayar: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Bank Persepsi / Kasir Penerima Custom */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                  <Building2 size={13} className="text-emerald-600" />
                   Bank / Kasir Penerima *
                 </label>
                 <select
-                  value={payModal.bankBayar}
-                  onChange={(e) => setPayModal({ ...payModal, bankBayar: e.target.value })}
+                  value={payModal.bankSelect}
+                  onChange={(e) => setPayModal({ ...payModal, bankSelect: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="Bank BPD Jateng">Bank BPD Jateng</option>
-                  <option value="Bank BPD Jabar Banten (BJB)">Bank BJB</option>
+                  <option value="Bank Sumut">Bank Sumut</option>
+                  <option value="Bank Sumut Syariah">Bank Sumut Syariah</option>
                   <option value="Bank Mandiri">Bank Mandiri</option>
                   <option value="Bank BRI">Bank BRI</option>
+                  <option value="Bank BNI">Bank BNI</option>
                   <option value="Bank BCA">Bank BCA</option>
-                  <option value="Kasir Bapenda">Kasir Loket Bapenda</option>
+                  <option value="Bank BPD Jateng">Bank BPD Jateng</option>
+                  <option value="Bank BPD Jabar Banten (BJB)">Bank BJB</option>
+                  <option value="Kasir Loket Bapenda Kab. Tapanuli Selatan">
+                    Kasir Loket Bapenda Kab. Tapanuli Selatan
+                  </option>
+                  <option value="__CUSTOM__">
+                    -- Lainnya / Input Nama Bank / Kasir Custom --
+                  </option>
                 </select>
+
+                {payModal.bankSelect === "__CUSTOM__" && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={payModal.customBank}
+                      onChange={(e) => setPayModal({ ...payModal, customBank: e.target.value })}
+                      placeholder="Ketik nama Bank / Kasir penerima..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-emerald-50/50 border border-emerald-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -862,9 +1003,85 @@ export default function DetailBerkasPage({
                 type="button"
                 disabled={submitting}
                 onClick={handlePaymentSubmit}
-                className="px-5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-xs disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs disabled:opacity-50"
               >
                 {submitting ? "Menyimpan..." : "Konfirmasi Lunas"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Batal Pembayaran */}
+      {batalPayModal.open && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div className="flex items-center gap-2.5 text-rose-600">
+              <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                <AlertTriangle size={20} className="text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Batalkan Pembayaran BPHTB
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Reset pelunasan dan kembalikan ke status Siap Bayar
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-600">No. Kohir:</span>
+                <strong className="font-mono text-slate-900">{berkas.kdKohir || "-"}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Wajib Pajak:</span>
+                <strong className="text-slate-900">{berkas.namaWpBaru}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Bank / Kasir:</span>
+                <span className="text-slate-800 font-medium">{berkas.bankBayar || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">No. Bukti:</span>
+                <span className="font-mono text-slate-800 font-semibold">{berkas.noBuktiBayar || "-"}</span>
+              </div>
+              <div className="pt-2 border-t border-rose-200 flex justify-between items-center">
+                <span className="text-slate-700 font-semibold">Nominal:</span>
+                <span className="text-sm font-black text-rose-700">{formatRupiah(berkas.nilaiSudahDibayar || berkas.bphtb)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              <label className="block font-semibold text-slate-700">
+                Alasan / Catatan Pembatalan Pembayaran
+              </label>
+              <textarea
+                rows={3}
+                value={batalPayModal.alasan}
+                onChange={(e) => setBatalPayModal({ ...batalPayModal, alasan: e.target.value })}
+                placeholder="Misal: Salah input nomor transaksi bank atau setoran dibatalkan..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setBatalPayModal({ open: false, alasan: "" })}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleBatalPaySubmit}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs disabled:opacity-50 flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition"
+              >
+                <RotateCcw size={14} />
+                {submitting ? "Memproses..." : "Ya, Batalkan Pembayaran"}
               </button>
             </div>
           </div>

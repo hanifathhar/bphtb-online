@@ -29,10 +29,23 @@ export async function GET(req: Request) {
       ];
     }
 
+    const bulanAwal = searchParams.get("bulanAwal");
+    const bulanAkhir = searchParams.get("bulanAkhir");
+
     if (startDate && endDate) {
       where.tglBerkas = {
         gte: new Date(startDate),
         lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+      };
+    } else if (bulanAwal && bulanAkhir && tahun) {
+      const bAwal = parseInt(bulanAwal);
+      const bAkhir = parseInt(bulanAkhir);
+      const y = parseInt(tahun);
+      const start = new Date(y, bAwal - 1, 1, 0, 0, 0);
+      const end = new Date(y, bAkhir, 0, 23, 59, 59, 999);
+      where.tglBerkas = {
+        gte: start,
+        lte: end,
       };
     }
 
@@ -58,8 +71,8 @@ export async function GET(req: Request) {
       // Must have SKP / Kohir
       where.statusBerkas = { in: [4, 5] };
     } else if (jenis === "pembayaran") {
-      // Lunas only
-      where.statusBayar = 1;
+      // Transaksi yang telah ditetapkan SKP & Pembayaran (Siap Bayar atau Lunas)
+      where.statusBerkas = { in: [4, 5] };
     } else if (jenis === "piutang") {
       // SKP terbit tapi belum bayar
       where.statusBayar = 0;

@@ -26,8 +26,24 @@ export async function POST(
       return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 404 });
     }
 
-    const bayar = parseFloat(nilaiBayar || existing.bphtb || 0);
-    const now = tglBayar ? new Date(tglBayar) : new Date();
+    const totalTagihan = existing.bphtb ? Number(existing.bphtb) : 0;
+    const bayar = parseFloat(
+      nilaiBayar !== undefined && nilaiBayar !== null && String(nilaiBayar).trim() !== ""
+        ? nilaiBayar
+        : totalTagihan
+    );
+    const sisaBelumDibayar = Math.max(0, totalTagihan - bayar);
+
+    let now: Date;
+    if (tglBayar) {
+      if (typeof tglBayar === "string" && /^\d{4}-\d{2}-\d{2}$/.test(tglBayar)) {
+        now = new Date(`${tglBayar}T12:00:00Z`);
+      } else {
+        now = new Date(tglBayar);
+      }
+    } else {
+      now = new Date();
+    }
 
     const updated = await prisma.tblBphtb.update({
       where: { idBerkas: berkasId },
@@ -35,10 +51,10 @@ export async function POST(
         statusBayar: 1, // Lunas
         statusBerkas: 5, // Status Lunas
         tglBayar: now,
-        bankBayar: bankBayar || "Bank BPD / Mitra Kasir",
+        bankBayar: bankBayar || "Bank Persepsi / Mitra Kasir",
         noBuktiBayar: noBuktiBayar || `TRX-${Date.now()}`,
         nilaiSudahDibayar: bayar,
-        nilaiBelumDibayar: 0,
+        nilaiBelumDibayar: sisaBelumDibayar,
       },
     });
 
