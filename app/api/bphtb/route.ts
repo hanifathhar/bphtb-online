@@ -111,16 +111,20 @@ export async function POST(req: Request) {
       }
     }
 
-    const npopkp = Math.max(0, npop - npoptkp);
+    const isKepentinganUmum = body.kepentingan === 1 || body.isKepentinganUmum === true;
+    const npopkp = isKepentinganUmum ? 0 : Math.max(0, npop - npoptkp);
     const tarif = parseFloat(body.tarif || 5.0);
 
     const isSkpdkb = body.jenisKetetapan === "SKPDKB";
     const nilaiKurangBayar = parseFloat(body.nilaiKurangBayar || 0);
     const dendaKurangBayar = parseFloat(body.dendaKurangBayar || 0);
-    const bphtb = isSkpdkb ? (nilaiKurangBayar + dendaKurangBayar) : ((npopkp * tarif) / 100);
+    const bphtb = isSkpdkb ? (nilaiKurangBayar + dendaKurangBayar) : (isKepentinganUmum ? 0 : ((npopkp * tarif) / 100));
     const cleanNop = body.nop ? String(body.nop).replace(/\D/g, "") : null;
 
     let finalKeterangan = body.keterangan || "";
+    if (isKepentinganUmum && !finalKeterangan.includes("[Kepentingan Umum]")) {
+      finalKeterangan = finalKeterangan ? `[Kepentingan Umum] ${finalKeterangan}` : "[Kepentingan Umum]";
+    }
     if (isSkpdkb) {
       const skpdkbInfo = `[SKPDKB] Pokok Kurang Bayar: Rp ${new Intl.NumberFormat("id-ID").format(nilaiKurangBayar)}, Sanksi Denda/Bunga: Rp ${new Intl.NumberFormat("id-ID").format(dendaKurangBayar)}${body.alasanKurangBayar ? ` (${body.alasanKurangBayar})` : ""}`;
       finalKeterangan = finalKeterangan ? `${skpdkbInfo} - ${finalKeterangan}` : skpdkbInfo;
@@ -207,7 +211,7 @@ export async function POST(req: Request) {
         scanPbb: body.scanPbb || null,
 
         ppat: body.ppat || (user?.roleName === "PPAT" ? user?.nama : null),
-        kepentingan: body.kepentingan ? parseInt(body.kepentingan) : 0,
+        kepentingan: isKepentinganUmum ? 1 : (body.kepentingan ? parseInt(body.kepentingan) : 0),
       },
     });
 

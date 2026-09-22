@@ -92,7 +92,8 @@ export default function PendaftaranBphtbPage() {
     npoptkp: 80000000,
     tarif: 5.0,
     ppat: "",
-    kepentingan: 1,
+    kepentingan: 0,
+    isKepentinganUmum: false,
     keterangan: "",
 
     // SKPDKB (Kurang Bayar) Feature
@@ -243,12 +244,14 @@ export default function PendaftaranBphtbPage() {
   const totalNjopBangunan = luasBangunan * njopBangunan;
   const totalNjop = totalNjopBumi + totalNjopBangunan;
 
+  const isKepentinganUmum = Boolean(formData.isKepentinganUmum || formData.kepentingan === 1);
+
   const nilaiTransaksi = Number(formData.nilaiTransaksi) || 0;
   const npop = Math.max(nilaiTransaksi, totalNjop);
   const npoptkp = Number(formData.npoptkp) || 0;
-  const npopkp = Math.max(0, npop - npoptkp);
+  const npopkp = isKepentinganUmum ? 0 : Math.max(0, npop - npoptkp);
   const tarif = Number(formData.tarif) || 5.0;
-  const bphtbStandar = (npopkp * tarif) / 100;
+  const bphtbStandar = isKepentinganUmum ? 0 : ((npopkp * tarif) / 100);
 
   // Jika SKPDKB, nilai BPHTB adalah Pokok Kurang Bayar + Denda/Bunga
   const isSkpdkb = formData.jenisKetetapan === "SKPDKB";
@@ -288,6 +291,8 @@ export default function PendaftaranBphtbPage() {
           npopkp,
           tarif,
           bphtb: bphtbTerutang,
+          kepentingan: isKepentinganUmum ? 1 : 0,
+          isKepentinganUmum,
           jenisKetetapan: formData.jenisKetetapan,
           nilaiKurangBayar: isSkpdkb ? nilaiKurangBayar : 0,
           dendaKurangBayar: isSkpdkb ? dendaKurangBayar : 0,
@@ -498,7 +503,7 @@ export default function PendaftaranBphtbPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: ASNAN HANAFI"
+                  placeholder="Contoh: Abdul Hanif Athhar"
                   value={formData.namaWp}
                   onChange={(e) => setFormData({ ...formData, namaWp: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
@@ -630,7 +635,7 @@ export default function PendaftaranBphtbPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Anindya Putri Lestari"
+                  placeholder="Contoh: Roy Sandy Harahap"
                   value={formData.namaWpBaru}
                   onChange={(e) => setFormData({ ...formData, namaWpBaru: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -920,22 +925,20 @@ export default function PendaftaranBphtbPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, jenisKetetapan: "SKPD" })}
-                  className={`px-3 py-1.5 rounded-lg transition ${
-                    formData.jenisKetetapan === "SKPD"
-                      ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition ${formData.jenisKetetapan === "SKPD"
+                    ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                    : "text-slate-500 hover:text-slate-800"
+                    }`}
                 >
                   SKPD Standar
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, jenisKetetapan: "SKPDKB" })}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    formData.jenisKetetapan === "SKPDKB"
-                      ? "bg-amber-500 text-white shadow-xs"
-                      : "text-amber-700 hover:text-amber-900"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${formData.jenisKetetapan === "SKPDKB"
+                    ? "bg-amber-500 text-white shadow-xs"
+                    : "text-amber-700 hover:text-amber-900"
+                    }`}
                 >
                   <AlertCircle size={13} />
                   <span>SKPDKB (Kurang Bayar)</span>
@@ -989,6 +992,48 @@ export default function PendaftaranBphtbPage() {
                   <p className="text-[11px] text-slate-500 mt-1">
                     * NPOP diambil dari nilai tertinggi antara Nilai Transaksi Pasar dan Total NJOP PBB.
                   </p>
+                </div>
+
+                {/* Checkbox Kepentingan Umum */}
+                <div className={`p-4 rounded-2xl border transition ${isKepentinganUmum
+                  ? "bg-emerald-50/80 border-emerald-300 shadow-xs"
+                  : "bg-slate-50/90 border-slate-200 hover:border-slate-300"
+                  }`}>
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="checkbox-kepentingan-umum"
+                      checked={Boolean(formData.isKepentinganUmum)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData((prev) => ({
+                          ...prev,
+                          isKepentinganUmum: checked,
+                          kepentingan: checked ? 1 : 0,
+                        }));
+                      }}
+                      className="mt-0.5 h-4.5 w-4.5 rounded-md text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer accent-emerald-600"
+                    />
+                    <div className="space-y-0.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-xs text-slate-900">
+                          Untuk Kepentingan Umum
+                        </span>
+                        {isKepentinganUmum ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300">
+                            Nihil (Bebas Pajak)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-500">
+                            (Hibah sosial, tempat ibadah, fasilitas umum/pemerintah)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Jika dicentang, perolehan hak dibebaskan dari pengenaan BPHTB sehingga nilai <strong>NPOPKP</strong> dan tarif <strong>BPHTB Terutang</strong> otomatis <strong>Nihil (Rp 0)</strong>.
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Manual Input Fields for SKPDKB */}
@@ -1088,6 +1133,13 @@ export default function PendaftaranBphtbPage() {
                   {isSkpdkb ? "Rincian Ketetapan SKPDKB (Kurang Bayar)" : "Rincian Perhitungan Pajak (Rumus Perda)"}
                 </h4>
 
+                {isKepentinganUmum && !isSkpdkb && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    <span><strong>Objek Kepentingan Umum:</strong> Pembebasan Bea BPHTB (NPOPKP & Nilai Pajak Nihil).</span>
+                  </div>
+                )}
+
                 <div className="space-y-2.5 text-xs font-medium">
                   {!isSkpdkb ? (
                     <>
@@ -1113,7 +1165,9 @@ export default function PendaftaranBphtbPage() {
 
                       <div className="flex justify-between items-center text-slate-700 font-semibold border-t border-slate-200/80 pt-2">
                         <span>NPOPKP (Kena Pajak):</span>
-                        <span>{formatRupiah(npopkp)}</span>
+                        <span className={isKepentinganUmum ? "text-emerald-700 font-bold" : ""}>
+                          {formatRupiah(npopkp)} {isKepentinganUmum ? "(Nihil)" : ""}
+                        </span>
                       </div>
 
                       <div className="flex justify-between items-center text-slate-500">
@@ -1146,16 +1200,17 @@ export default function PendaftaranBphtbPage() {
                     </>
                   )}
 
-                  <div className={`p-3.5 rounded-xl border mt-3 ${
-                    isSkpdkb 
-                      ? "bg-amber-50 border-amber-300 text-amber-900" 
+                  <div className={`p-3.5 rounded-xl border mt-3 ${isSkpdkb
+                    ? "bg-amber-50 border-amber-300 text-amber-900"
+                    : isKepentinganUmum
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-900"
                       : "bg-gradient-to-r from-teal-500/20 via-emerald-500/10 to-transparent border-red-200 text-red-700"
-                  }`}>
+                    }`}>
                     <p className="text-[11px] uppercase tracking-wider font-bold">
                       {isSkpdkb ? "Total Tagihan SKPDKB Kurang Bayar:" : "BPHTB Terutang:"}
                     </p>
                     <p className="text-xl font-black text-slate-900">
-                      {formatRupiah(bphtbTerutang)}
+                      {formatRupiah(bphtbTerutang)} {isKepentinganUmum && !isSkpdkb ? "(Nihil)" : ""}
                     </p>
                   </div>
                 </div>
@@ -1221,9 +1276,8 @@ export default function PendaftaranBphtbPage() {
                 </div>
                 <div>
                   <p className="text-[11px] text-slate-500">Jenis Ketetapan:</p>
-                  <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold mt-1 ${
-                    isSkpdkb ? "bg-amber-100 text-amber-800 border border-amber-300" : "bg-blue-100 text-blue-800 border border-blue-200"
-                  }`}>
+                  <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold mt-1 ${isSkpdkb ? "bg-amber-100 text-amber-800 border border-amber-300" : "bg-blue-100 text-blue-800 border border-blue-200"
+                    }`}>
                     {isSkpdkb ? "SKPDKB (Kurang Bayar)" : "SKPD Standar"}
                   </span>
                 </div>

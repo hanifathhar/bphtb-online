@@ -78,6 +78,8 @@ export default function EditBerkasBphtbPage({
     npoptkp: 80000000,
     tarif: 5.0,
     ppat: "",
+    kepentingan: 0,
+    isKepentinganUmum: false,
     keterangan: "",
 
     scanKtp: "",
@@ -155,6 +157,8 @@ export default function EditBerkasBphtbPage({
             npoptkp: Number(d.npoptkp || 80000000),
             tarif: Number(d.tarif || 5.0),
             ppat: d.ppat || "",
+            kepentingan: d.kepentingan || 0,
+            isKepentinganUmum: d.kepentingan === 1,
             keterangan: d.keterangan || "",
 
             scanKtp: d.scanKtp || "",
@@ -186,12 +190,14 @@ export default function EditBerkasBphtbPage({
   const totalNjopBangunan = luasBangunan * njopBangunan;
   const nilaiPbb = totalNjopBumi + totalNjopBangunan;
 
+  const isKepentinganUmum = Boolean(formData.isKepentinganUmum || formData.kepentingan === 1);
+
   const nilaiTransaksi = Number(formData.nilaiTransaksi || 0);
   const npop = Math.max(nilaiTransaksi, nilaiPbb);
   const npoptkp = Number(formData.npoptkp || 0);
-  const npopkp = Math.max(0, npop - npoptkp);
+  const npopkp = isKepentinganUmum ? 0 : Math.max(0, npop - npoptkp);
   const tarif = Number(formData.tarif || 5.0);
-  const calculatedBphtb = (npopkp * tarif) / 100;
+  const calculatedBphtb = isKepentinganUmum ? 0 : ((npopkp * tarif) / 100);
 
   const handleJenisTransaksiChange = (val: string) => {
     const found = jenisTransaksis.find((j) => String(j.jnsTransaksi) === val);
@@ -666,8 +672,49 @@ export default function EditBerkasBphtbPage({
             </div>
           </div>
 
+          {/* Checkbox Kepentingan Umum */}
+          <div className={`p-4 rounded-2xl border transition ${
+            isKepentinganUmum 
+              ? "bg-emerald-50 border-emerald-300 shadow-xs" 
+              : "bg-slate-50 border-slate-200"
+          }`}>
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                id="edit-kepentingan-umum"
+                checked={Boolean(formData.isKepentinganUmum)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    isKepentinganUmum: checked,
+                    kepentingan: checked ? 1 : 0,
+                  }));
+                }}
+                className="mt-0.5 h-4.5 w-4.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer accent-emerald-600"
+              />
+              <div className="space-y-0.5 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-xs text-slate-900">
+                    Untuk Kepentingan Umum (Nihil BPHTB)
+                  </span>
+                  {isKepentinganUmum && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300">
+                      Nihil / Bebas Pajak
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Centang opsi ini jika perolehan hak merupakan fasilitas sosial, tempat ibadah, kegiatan non-komersial kepentingan umum, atau instansi pemerintah. NPOPKP dan BPHTB akan otomatis dihitung <strong>Nihil (Rp 0)</strong>.
+                </p>
+              </div>
+            </label>
+          </div>
+
           {/* Rincian Hasil Perhitungan */}
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+          <div className={`p-4 rounded-2xl border space-y-2 ${
+            isKepentinganUmum ? "bg-emerald-50/70 border-emerald-300" : "bg-amber-50 border-amber-200"
+          }`}>
             <div className="flex justify-between items-center text-slate-700">
               <span>Dasar Pengenaan Pajak (NPOP = Max[Transaksi, NJOP]):</span>
               <span className="font-mono font-bold text-slate-900">{formatRupiah(npop)}</span>
@@ -678,11 +725,17 @@ export default function EditBerkasBphtbPage({
             </div>
             <div className="flex justify-between items-center text-slate-700">
               <span>Nilai Kena Pajak (NPOPKP):</span>
-              <span className="font-mono font-bold text-slate-900">{formatRupiah(npopkp)}</span>
+              <span className={`font-mono font-bold ${isKepentinganUmum ? "text-emerald-700 font-extrabold" : "text-slate-900"}`}>
+                {formatRupiah(npopkp)} {isKepentinganUmum ? "(Nihil)" : ""}
+              </span>
             </div>
-            <div className="pt-2 border-t border-amber-200 flex justify-between items-center">
-              <span className="font-bold text-slate-900 text-sm">Bea BPHTB Terutang (5% × NPOPKP):</span>
-              <span className="font-mono font-black text-lg text-emerald-600">{formatRupiah(calculatedBphtb)}</span>
+            <div className="pt-2 border-t border-amber-200/80 flex justify-between items-center">
+              <span className="font-bold text-slate-900 text-sm">
+                Bea BPHTB Terutang {isKepentinganUmum ? "(Nihil)" : "(5% × NPOPKP)"}:
+              </span>
+              <span className="font-mono font-black text-lg text-emerald-600">
+                {formatRupiah(calculatedBphtb)} {isKepentinganUmum ? "(Nihil)" : ""}
+              </span>
             </div>
           </div>
 

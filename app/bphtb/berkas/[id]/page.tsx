@@ -713,16 +713,31 @@ export default function DetailBerkasPage({
               </div>
               <div className="flex justify-between text-slate-700 font-semibold pt-1 border-t border-slate-200">
                 <span>NPOPKP:</span>
-                <span>{formatRupiah(berkas.npopkp)}</span>
+                <span className={berkas.kepentingan === 1 ? "text-emerald-700 font-extrabold" : ""}>
+                  {formatRupiah(berkas.npopkp)} {berkas.kepentingan === 1 ? "(Nihil)" : ""}
+                </span>
               </div>
               <div className="flex justify-between text-slate-500">
                 <span>Tarif:</span>
                 <span className="text-slate-800">{Number(berkas.tarif || 5)}%</span>
               </div>
 
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-500/20 to-emerald-500/10 border border-red-200 mt-3">
+              {berkas.kepentingan === 1 && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5 mt-2">
+                  <CheckCircle size={14} className="text-emerald-600 shrink-0" />
+                  <span>Objek Kepentingan Umum (Bebas BPHTB)</span>
+                </div>
+              )}
+
+              <div className={`p-4 rounded-2xl border mt-3 ${
+                berkas.kepentingan === 1 
+                  ? "bg-emerald-50 border-emerald-300" 
+                  : "bg-gradient-to-r from-teal-500/20 to-emerald-500/10 border-red-200"
+              }`}>
                 <p className="text-[10px] font-bold text-red-600 uppercase">Ketetapan BPHTB Terutang</p>
-                <p className="text-2xl font-black text-slate-900">{formatRupiah(berkas.bphtb)}</p>
+                <p className="text-2xl font-black text-slate-900">
+                  {formatRupiah(berkas.bphtb)} {berkas.kepentingan === 1 ? "(Nihil)" : ""}
+                </p>
               </div>
             </div>
           </div>

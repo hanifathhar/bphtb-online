@@ -59,7 +59,16 @@ export async function PUT(
     const nilaiTransaksi = parseFloat(body.nilaiTransaksi || 0);
     const npop = Math.max(nilaiTransaksi, nilaiPbb);
     const npoptkp = parseFloat(body.npoptkp || 0);
-    const npopkp = Math.max(0, npop - npoptkp);
+    const existing = await prisma.tblBphtb.findUnique({
+      where: { idBerkas: parseInt(id) },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 404 });
+    }
+
+    const isKepentinganUmum = body.kepentingan === 1 || body.isKepentinganUmum === true || (body.kepentingan === undefined && body.isKepentinganUmum === undefined && existing.kepentingan === 1);
+    const npopkp = isKepentinganUmum ? 0 : Math.max(0, npop - npoptkp);
     const tarif = parseFloat(body.tarif || 5.0);
 
     const isSkpdkb = body.jenisKetetapan === "SKPDKB" || (body.keterangan && String(body.keterangan).includes("[SKPDKB]"));
@@ -67,20 +76,15 @@ export async function PUT(
     const dendaKurangBayar = parseFloat(body.dendaKurangBayar || 0);
     const bphtb = isSkpdkb && (nilaiKurangBayar > 0 || dendaKurangBayar > 0)
       ? (nilaiKurangBayar + dendaKurangBayar)
-      : ((npopkp * tarif) / 100);
+      : (isKepentinganUmum ? 0 : ((npopkp * tarif) / 100));
 
     let finalKeterangan = body.keterangan || "";
+    if (isKepentinganUmum && !finalKeterangan.includes("[Kepentingan Umum]")) {
+      finalKeterangan = finalKeterangan ? `[Kepentingan Umum] ${finalKeterangan}` : "[Kepentingan Umum]";
+    }
     if (body.jenisKetetapan === "SKPDKB" && !finalKeterangan.includes("[SKPDKB]")) {
       const skpdkbInfo = `[SKPDKB] Pokok Kurang Bayar: Rp ${new Intl.NumberFormat("id-ID").format(nilaiKurangBayar)}, Sanksi Denda/Bunga: Rp ${new Intl.NumberFormat("id-ID").format(dendaKurangBayar)}${body.alasanKurangBayar ? ` (${body.alasanKurangBayar})` : ""}`;
       finalKeterangan = finalKeterangan ? `${skpdkbInfo} - ${finalKeterangan}` : skpdkbInfo;
-    }
-
-    const existing = await prisma.tblBphtb.findUnique({
-      where: { idBerkas: parseInt(id) },
-    });
-
-    if (!existing) {
-      return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 404 });
     }
 
     const cleanNop = body.nop !== undefined 
@@ -138,6 +142,7 @@ export async function PUT(
       scanPbb: body.scanPbb,
 
       ppat: body.ppat,
+      kepentingan: body.kepentingan !== undefined ? (body.kepentingan === 1 || body.isKepentinganUmum ? 1 : 0) : (body.isKepentinganUmum !== undefined ? (body.isKepentinganUmum ? 1 : 0) : existing.kepentingan),
     };
 
     // If berkas was rejected (status 9) or resubmit requested, reset verification and set to status 1
