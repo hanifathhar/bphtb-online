@@ -30,6 +30,9 @@ import {
   Trash2,
   Undo2,
   X,
+  Paperclip,
+  ExternalLink,
+  UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNoSts } from "@/lib/sspd";
@@ -681,6 +684,66 @@ export default function DetailBerkasPage({
                 <p className="text-slate-700 mt-1">{berkas.ketVerif3 || "Tidak ada catatan."}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">Petugas: {berkas.userVerif3 || "-"}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Section 4: Dokumen Lampiran Berkas */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4 text-xs">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+              <UploadCloud size={18} className="text-purple-700" />
+              Dokumen Lampiran & Kelengkapan Berkas
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                { label: "1. KTP Wajib Pajak Baru", key: "scanKtp", val: berkas.scanKtp },
+                { label: "2. NPWP Wajib Pajak Baru", key: "scanNpwp", val: berkas.scanNpwp },
+                { label: "3. Surat Pernyataan Data", key: "scanPernyataan", val: berkas.scanPernyataan },
+                { label: "4. Sertifikat Tanah / Girik", key: "scanSertifikat", val: berkas.scanSertifikat },
+                { label: "5. SPPT PBB Terverifikasi", key: "scanPbb", val: berkas.scanPbb },
+                { label: "6. Foto Lokasi Objek", key: "fotoObjek", val: berkas.fotoObjek },
+              ].map((doc, idx) => {
+                const hasFile = Boolean(doc.val && doc.val !== "");
+                const fileName = hasFile ? doc.val.split("/").pop() : "";
+
+                return (
+                  <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 flex flex-col justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-800 text-[11px] truncate mb-1">
+                        {doc.label}
+                      </p>
+                      {hasFile ? (
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-mono text-[11px] truncate">
+                          <Paperclip size={12} className="shrink-0" />
+                          <span className="truncate" title={fileName}>{fileName}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-600 italic">
+                          Belum dilampirkan
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                      {hasFile ? (
+                        <a
+                          href={doc.val}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold transition"
+                        >
+                          <ExternalLink size={11} />
+                          <span>Buka Dokumen</span>
+                        </a>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 text-slate-500 font-medium">
+                          Tidak Ada File
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

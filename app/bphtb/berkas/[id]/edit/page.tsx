@@ -15,6 +15,11 @@ import {
   CheckCircle2,
   RefreshCw,
   RotateCcw,
+  FileUp,
+  Paperclip,
+  ExternalLink,
+  Trash2,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +33,7 @@ export default function EditBerkasBphtbPage({
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [berkas, setBerkas] = useState<any>(null);
 
   // Master Data States
@@ -206,6 +212,49 @@ export default function EditBerkasBphtbPage({
       jnsTransaksi: val,
       npoptkp: found && found.nopptkp ? Number(found.nopptkp) : prev.npoptkp,
     }));
+  };
+
+  const handleFileUpload = async (key: string, file: File) => {
+    if (!file) return;
+
+    // Validasi Ukuran File (Maksimal 1 MB)
+    const MAX_BYTES = 1 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      toast.error(
+        `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas maksimal 1MB!`
+      );
+      return;
+    }
+
+    setUploadingField(key);
+    const toastId = toast.loading(`Mengunggah file ${file.name}...`);
+
+    try {
+      const data = new FormData();
+      data.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: data,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        toast.error(json.error || "Gagal mengunggah file", { id: toastId });
+        return;
+      }
+
+      setFormData((prev: any) => ({
+        ...prev,
+        [key]: json.data.url,
+      }));
+
+      toast.success(`File ${file.name} berhasil diunggah!`, { id: toastId });
+    } catch (err: any) {
+      toast.error("Terjadi kesalahan saat mengunggah: " + err.message, { id: toastId });
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -748,6 +797,107 @@ export default function EditBerkasBphtbPage({
               placeholder="Catatan tambahan dokumen atau penjelasan perbaikan..."
               className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:ring-2 focus:ring-amber-500"
             />
+          </div>
+        </div>
+
+        {/* Seksi 5: Upload Dokumen Lampiran */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4 text-xs">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+            <UploadCloud size={16} className="text-purple-600" />
+            5. Dokumen Lampiran & Kelengkapan Berkas
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { label: "1. KTP Wajib Pajak Baru (Pembeli)", key: "scanKtp", required: true, accept: ".pdf,.jpg,.jpeg,.png", desc: "PDF / JPG / PNG (Maks. 1MB)" },
+              { label: "2. NPWP Wajib Pajak Baru", key: "scanNpwp", required: false, accept: ".pdf,.jpg,.jpeg,.png", desc: "PDF / JPG / PNG (Maks. 1MB)" },
+              { label: "3. Surat Pernyataan Kebenaran Data", key: "scanPernyataan", required: true, accept: ".pdf,.jpg,.jpeg,.png", desc: "PDF / JPG / PNG (Maks. 1MB)" },
+              { label: "4. Sertifikat Tanah / Girik", key: "scanSertifikat", required: true, accept: ".pdf,.jpg,.jpeg,.png", desc: "PDF / JPG / PNG (Maks. 1MB)" },
+              { label: "5. SPPT PBB Terverifikasi", key: "scanPbb", required: true, accept: ".pdf,.jpg,.jpeg,.png", desc: "PDF / JPG / PNG (Maks. 1MB)" },
+              { label: "6. Foto Lokasi Objek Pajak", key: "fotoObjek", required: false, accept: ".jpg,.jpeg,.png,.webp", desc: "Foto JPG / PNG (Maks. 1MB)" },
+            ].map((doc, i) => {
+              const currentVal = (formData as any)[doc.key];
+              const isUploading = uploadingField === doc.key;
+              const fileName = currentVal ? currentVal.split("/").pop() : "";
+
+              return (
+                <div key={i} className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-2.5 flex flex-col justify-between">
+                  <div className="flex items-start justify-between gap-2">
+                    <label className="font-semibold text-slate-800 block leading-tight">
+                      {doc.label} {doc.required && <span className="text-red-500 font-bold">*</span>}
+                    </label>
+                    {currentVal ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold shrink-0 flex items-center gap-1">
+                        <Check size={11} /> Terunggah
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-medium shrink-0">
+                        Belum Ada
+                      </span>
+                    )}
+                  </div>
+
+                  {currentVal ? (
+                    <div className="p-2.5 rounded-xl bg-white border border-emerald-200 flex items-center justify-between gap-2 shadow-xs">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Paperclip size={14} className="text-emerald-600 shrink-0" />
+                        <span className="text-slate-800 font-mono text-[11px] truncate" title={fileName}>
+                          {fileName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={currentVal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition"
+                          title="Buka / Preview Dokumen"
+                        >
+                          <ExternalLink size={13} />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, [doc.key]: "" })}
+                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition"
+                          title="Hapus Dokumen"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className={`border-2 border-dashed rounded-xl p-3.5 flex flex-col items-center justify-center cursor-pointer transition text-center ${
+                        isUploading ? "bg-slate-100 border-slate-300 pointer-events-none" : "border-slate-300 hover:border-red-400 bg-white hover:bg-red-50/20"
+                      }`}>
+                        <input
+                          type="file"
+                          accept={doc.accept}
+                          disabled={isUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(doc.key, file);
+                          }}
+                          className="hidden"
+                        />
+                        {isUploading ? (
+                          <div className="flex items-center gap-2 text-slate-600 text-xs py-1">
+                            <RefreshCw size={14} className="animate-spin text-red-600" />
+                            <span className="font-semibold">Mengunggah (Maks. 1MB)...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FileUp size={20} className="text-purple-600 mb-1" />
+                            <span className="text-[11px] font-bold text-slate-700">Pilih / Unggah File</span>
+                            <span className="text-[10px] text-slate-500 mt-0.5">{doc.desc}</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
