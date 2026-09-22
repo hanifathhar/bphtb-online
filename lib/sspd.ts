@@ -42,8 +42,8 @@ export function formatRupiah(val: number | string | null | undefined): string {
 
 /**
  * Format No STS / No SSPD:
- * 2964111301 + [tahun 4 digit] + 09 + [no urut 4 digit]
- * e.g. 29641113012026090001
+ * 12964111301 + [tahun 4 digit] + 09 + [no urut 4 digit]
+ * e.g. 129641113012026090001
  */
 export function formatNoSts(
   idBerkas?: number | string,
@@ -56,7 +56,7 @@ export function formatNoSts(
   const yearStr = (tahun ? String(tahun) : new Date().getFullYear().toString()).slice(0, 4);
   const numId = parseInt(String(idBerkas || 1), 10) || 1;
   const seqStr = numId.toString().padStart(4, "0");
-  return `2964111301${yearStr}09${seqStr}`;
+  return `12964111301${yearStr}09${seqStr}`;
 }
 
 /**

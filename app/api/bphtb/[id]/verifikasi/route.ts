@@ -95,11 +95,11 @@ export async function POST(
         // Format kd_kohir: 9 + [no urut 4 digit] + / + [tahun 4 digit] (e.g. 90001/2026)
         updateData.kdKohir = formatKdKohir(berkasId, year);
 
-        // Format no_sts: 2964111301 + [tahun 4 digit] + 09 + [no urut 4 digit] (e.g. 29641113012026090001)
+        // Format no_sts: 12964111301 + [tahun 4 digit] + 09 + [no urut 4 digit] (e.g. 129641113012026090001)
         updateData.noSts = formatNoSts(berkasId, year);
 
         updateData.tglSkp = now;
-        
+
         // Jatuh tempo 30 hari ke depan
         const tempo = new Date();
         tempo.setDate(tempo.getDate() + 30);
