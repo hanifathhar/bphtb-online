@@ -303,135 +303,148 @@ export default function DaftarBerkasBphtbPage() {
                   </td>
                 </tr>
               ) : (
-                data.map((item) => (
-                  <tr key={item.idBerkas} className="hover:bg-slate-100 transition">
-                    <td className="px-4 py-3.5">
-                      <p className="font-bold text-slate-900">{item.noBerkas || "DRAFT"}</p>
-                      <p className="text-[11px] text-slate-500">
-                        {item.tglBerkas ? new Date(item.tglBerkas).toLocaleDateString("id-ID") : "-"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <p className="font-mono text-red-600 font-semibold">{item.nop || "-"}</p>
-                      <p className="text-[11px] text-slate-500 truncate max-w-[150px]">
-                        PPAT: {item.ppat || "-"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <p className="text-slate-800 font-semibold">{item.namaWpBaru || "-"}</p>
-                      <p className="text-[11px] text-slate-500 font-mono">
-                        NIK: {item.nikWpBaru || "-"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <p className="text-slate-800">{item.kecamatanOp || "-"}</p>
-                      <p className="text-[11px] text-slate-500 truncate max-w-[180px]">
-                        {item.lokasiOp || "-"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-bold text-slate-900">
-                      {formatRupiah(item.bphtb)}
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <div className="flex justify-center">
-                        {getStatusBadge(item.statusBerkas, item.statusBayar)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <div className="relative inline-block text-left">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenDropdownId(openDropdownId === item.idBerkas ? null : item.idBerkas);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-semibold shadow-xs transition"
-                        >
-                          <span>Aksi</span>
-                          <ChevronDown
-                            size={14}
-                            className={`text-slate-500 transition-transform duration-200 ${
-                              openDropdownId === item.idBerkas ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
+                data.map((item) => {
+                  const isUnverifiedNew =
+                    (item.statusBerkas === 0 || item.statusBerkas === 1) &&
+                    !item.verif1 &&
+                    !item.verif2 &&
+                    !item.verif3 &&
+                    item.statusBayar !== 1;
 
-                        {openDropdownId === item.idBerkas && (
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 mt-1.5 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 divide-y divide-slate-100 text-left"
+                  return (
+                    <tr key={item.idBerkas} className="hover:bg-slate-100 transition">
+                      <td className="px-4 py-3.5">
+                        <p className="font-bold text-slate-900">{item.noBerkas || "DRAFT"}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {item.tglBerkas ? new Date(item.tglBerkas).toLocaleDateString("id-ID") : "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="font-mono text-red-600 font-semibold">{item.nop || "-"}</p>
+                        <p className="text-[11px] text-slate-500 truncate max-w-[150px]">
+                          PPAT: {item.ppat || "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="text-slate-800 font-semibold">{item.namaWpBaru || "-"}</p>
+                        <p className="text-[11px] text-slate-500 font-mono">
+                          NIK: {item.nikWpBaru || "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="text-slate-800">{item.kecamatanOp || "-"}</p>
+                        <p className="text-[11px] text-slate-500 truncate max-w-[180px]">
+                          {item.lokasiOp || "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-bold text-slate-900">
+                        {formatRupiah(item.bphtb)}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="flex justify-center">
+                          {getStatusBadge(item.statusBerkas, item.statusBayar)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="relative inline-block text-left">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdownId(openDropdownId === item.idBerkas ? null : item.idBerkas);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-semibold shadow-xs transition"
                           >
-                            <div className="py-1">
-                              <Link
-                                href={`/bphtb/berkas/${item.idBerkas}`}
-                                onClick={() => setOpenDropdownId(null)}
-                                className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium transition"
-                              >
-                                <Eye size={14} className="text-slate-500" />
-                                <span>Lihat Detail</span>
-                              </Link>
-                              {item.statusBerkas >= 4 && item.statusBerkas !== 9 && (
-                                <Link
-                                  href={`/bphtb/berkas/${item.idBerkas}/cetak-skp`}
-                                  target="_blank"
-                                  onClick={() => setOpenDropdownId(null)}
-                                  className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-cyan-700 hover:bg-cyan-50 font-semibold transition"
-                                >
-                                  <Printer size={14} className="text-cyan-600" />
-                                  <span>Cetak SKP</span>
-                                </Link>
-                              )}
-                              <Link
-                                href={`/bphtb/berkas/${item.idBerkas}/cetak`}
-                                target="_blank"
-                                onClick={() => setOpenDropdownId(null)}
-                                className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium transition"
-                              >
-                                <Printer size={14} className="text-red-500" />
-                                <span>Cetak SSPD</span>
-                              </Link>
-                            </div>
+                            <span>Aksi</span>
+                            <ChevronDown
+                              size={14}
+                              className={`text-slate-500 transition-transform duration-200 ${
+                                openDropdownId === item.idBerkas ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
 
-                            {item.statusBerkas === 9 && (
+                          {openDropdownId === item.idBerkas && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 mt-1.5 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 divide-y divide-slate-100 text-left"
+                            >
                               <div className="py-1">
                                 <Link
-                                  href={`/bphtb/berkas/${item.idBerkas}/edit`}
+                                  href={`/bphtb/berkas/${item.idBerkas}`}
                                   onClick={() => setOpenDropdownId(null)}
-                                  className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-amber-700 hover:bg-amber-50 font-medium transition"
+                                  className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium transition"
                                 >
-                                  <Edit size={14} className="text-amber-600" />
-                                  <span>Perbaiki Data</span>
+                                  <Eye size={14} className="text-slate-500" />
+                                  <span>Lihat Detail</span>
                                 </Link>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    handleQuickRollback(item.idBerkas, item.noBerkas);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-blue-700 hover:bg-blue-50 font-medium transition text-left"
+                                {item.statusBerkas >= 4 && item.statusBerkas !== 9 && (
+                                  <Link
+                                    href={`/bphtb/berkas/${item.idBerkas}/cetak-skp`}
+                                    target="_blank"
+                                    onClick={() => setOpenDropdownId(null)}
+                                    className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-cyan-700 hover:bg-cyan-50 font-semibold transition"
+                                  >
+                                    <Printer size={14} className="text-cyan-600" />
+                                    <span>Cetak SKP</span>
+                                  </Link>
+                                )}
+                                <Link
+                                  href={`/bphtb/berkas/${item.idBerkas}/cetak`}
+                                  target="_blank"
+                                  onClick={() => setOpenDropdownId(null)}
+                                  className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium transition"
                                 >
-                                  <RotateCcw size={14} className="text-blue-600" />
-                                  <span>Rollback Berkas</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    handleQuickDelete(item.idBerkas, item.noBerkas);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-rose-700 hover:bg-rose-50 font-medium transition text-left"
-                                >
-                                  <Trash2 size={14} className="text-rose-600" />
-                                  <span>Hapus Berkas</span>
-                                </button>
+                                  <Printer size={14} className="text-red-500" />
+                                  <span>Cetak SSPD</span>
+                                </Link>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+
+                              {(item.statusBerkas === 9 || isUnverifiedNew) && (
+                                <div className="py-1">
+                                  {item.statusBerkas === 9 && (
+                                    <>
+                                      <Link
+                                        href={`/bphtb/berkas/${item.idBerkas}/edit`}
+                                        onClick={() => setOpenDropdownId(null)}
+                                        className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-amber-700 hover:bg-amber-50 font-medium transition"
+                                      >
+                                        <Edit size={14} className="text-amber-600" />
+                                        <span>Perbaiki Data</span>
+                                      </Link>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setOpenDropdownId(null);
+                                          handleQuickRollback(item.idBerkas, item.noBerkas);
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-blue-700 hover:bg-blue-50 font-medium transition text-left"
+                                      >
+                                        <RotateCcw size={14} className="text-blue-600" />
+                                        <span>Rollback Berkas</span>
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      handleQuickDelete(item.idBerkas, item.noBerkas || `#${item.idBerkas}`);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-rose-700 hover:bg-rose-50 font-medium transition text-left"
+                                  >
+                                    <Trash2 size={14} className="text-rose-600" />
+                                    <span>Hapus Berkas</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

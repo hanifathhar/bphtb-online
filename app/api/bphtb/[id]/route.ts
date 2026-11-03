@@ -202,13 +202,19 @@ export async function DELETE(
       );
     }
 
-    // Admin (level 1), Loket (level 2), PPAT (level 7), or Verifikator can delete rejected (status 9) or draft (status 0) berkas
+    // Berkas pendaftaran baru yang belum diverifikasi (status 0 atau status 1 & belum verif1/2/3) atau berkas ditolak (status 9)
     const isAdmin = user.level === 1;
-    const isRejectedOrDraft = existing.statusBerkas === 9 || existing.statusBerkas === 0;
+    const isUnverifiedNew =
+      existing.statusBerkas === 0 ||
+      (existing.statusBerkas === 1 &&
+        !existing.verif1 &&
+        !existing.verif2 &&
+        !existing.verif3);
+    const isRejected = existing.statusBerkas === 9;
 
-    if (!isAdmin && !isRejectedOrDraft) {
+    if (!isAdmin && !isUnverifiedNew && !isRejected) {
       return NextResponse.json(
-        { error: "Hanya berkas ditolak atau draft yang dapat dihapus oleh staf/pengguna." },
+        { error: "Hanya berkas pendaftaran baru (belum diverifikasi) atau berkas ditolak yang dapat dihapus." },
         { status: 403 }
       );
     }

@@ -61,7 +61,7 @@ export default function PendaftaranBphtbPage() {
     rwWp: "",
     kecamatanWp: "",
     kelurahanWp: "",
-    kotaWp: "Kabupaten",
+    kotaWp: "",
     kodePosWp: "",
     telpWp: "",
 
@@ -74,7 +74,7 @@ export default function PendaftaranBphtbPage() {
     rwWpBaru: "",
     kecamatanWpBaru: "",
     kelurahanWpBaru: "",
-    kotaWpBaru: "Kabupaten",
+    kotaWpBaru: "",
     kodePosWpBaru: "",
     telpWpBaru: "",
 
@@ -85,7 +85,7 @@ export default function PendaftaranBphtbPage() {
     rwOp: "",
     kecamatanOp: "",
     kelurahanOp: "",
-    kotaOp: "Kabupaten",
+    kotaOp: "Tapanuli Selatan",
     luasBumi: 100,
     luasBangunan: 0,
     njopBumi: 1500000,
@@ -648,6 +648,19 @@ export default function PendaftaranBphtbPage() {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1.5">
+                  Kabupaten / Kota
+                </label>
+                <input
+                  type="text"
+                  placeholder="Kabupaten/Kota"
+                  value={formData.kotaWp}
+                  onChange={(e) => setFormData({ ...formData, kotaWp: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1.5">
                   No. Telepon / WhatsApp
                 </label>
                 <input
@@ -774,6 +787,19 @@ export default function PendaftaranBphtbPage() {
                   placeholder="Kelurahan / Desa"
                   value={formData.kelurahanWpBaru}
                   onChange={(e) => setFormData({ ...formData, kelurahanWpBaru: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1.5">
+                  Kabupaten / Kota
+                </label>
+                <input
+                  type="text"
+                  placeholder="Kabupaten/Kota"
+                  value={formData.kotaWpBaru}
+                  onChange={(e) => setFormData({ ...formData, kotaWpBaru: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
@@ -1340,9 +1366,8 @@ export default function PendaftaranBphtbPage() {
                       </div>
                     ) : (
                       <div>
-                        <label className={`border-2 border-dashed rounded-xl p-3.5 flex flex-col items-center justify-center cursor-pointer transition text-center ${
-                          isUploading ? "bg-slate-100 border-slate-300 pointer-events-none" : "border-slate-300 hover:border-red-400 bg-white hover:bg-red-50/20"
-                        }`}>
+                        <label className={`border-2 border-dashed rounded-xl p-3.5 flex flex-col items-center justify-center cursor-pointer transition text-center ${isUploading ? "bg-slate-100 border-slate-300 pointer-events-none" : "border-slate-300 hover:border-red-400 bg-white hover:bg-red-50/20"
+                          }`}>
                           <input
                             type="file"
                             accept={doc.accept}
