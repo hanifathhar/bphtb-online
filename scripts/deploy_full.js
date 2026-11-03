@@ -72,9 +72,11 @@ async function deploy() {
   });
   console.log('Target VM Connected!');
 
-  // 1. Pull latest code on Target VM
+  // 1. Pull latest code on Target VM (preserve tracked upload file if present)
   console.log('\n--- 1. Pulling latest code on Target VM ---');
+  await runExec(targetConn, 'cp -f /home/hnf/bphtb-online/public/uploads/1790648650916_QR_Code_-_BB_1952_HD.png /tmp/1790648650916_QR_Code_-_BB_1952_HD.png 2>/dev/null || true', 'Backup upload file');
   await runExec(targetConn, 'cd /home/hnf/bphtb-online && git fetch origin main && git reset --hard origin/main', 'Git Pull');
+  await runExec(targetConn, 'cp -f /tmp/1790648650916_QR_Code_-_BB_1952_HD.png /home/hnf/bphtb-online/public/uploads/1790648650916_QR_Code_-_BB_1952_HD.png 2>/dev/null || true', 'Restore upload file');
 
   // 2. Ensure public/uploads directory exists with proper permissions
   console.log('\n--- 2. Setting up uploads directory ---');
