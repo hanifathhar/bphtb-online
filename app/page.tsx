@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import logoTapsel from "@/public/Logo-Tapsel.png";
 import logoBpkpad from "@/public/bpkpad-logo.png";
-import logoBpkpadLen from "@/public/bpkpad-len.png";
+import logoBpkpadLen from "@/public/bpkpad-white.png";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -118,7 +118,7 @@ export default function LoginPage() {
       <header className="relative z-20 w-full border-b border-white/15 bg-black/30 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 flex items-center justify-center shrink-0">
+            <div className="w-9 h-12 flex items-center justify-center shrink-0">
               <Image
                 src={logoTapsel}
                 alt="Logo Tapanuli Selatan"
@@ -128,32 +128,19 @@ export default function LoginPage() {
                 priority
               />
             </div>
-            <div className="h-9 flex items-center justify-center shrink-0">
+            <div className="h-12 flex items-center justify-center shrink-0">
               <Image
                 src={logoBpkpadLen}
                 alt="Logo BPKPAD Tapanuli Selatan"
-                width={105}
-                height={34}
-                className="h-8 w-auto object-contain drop-shadow-md"
+                width={150}
+                height={48}
+                className="h-12 w-auto object-contain drop-shadow-md"
                 priority
               />
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-xs sm:text-sm tracking-wider text-white">
-                BPHTB ONLINE
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/50 text-[10px] font-bold text-rose-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                SISTEM ONLINE
-              </span>
-            </div>
-            <p className="text-[10px] text-rose-200/80 font-medium hidden sm:block">
-              Badan Pengelolaan Keuangan, Pendapatan dan Aset Daerah
-            </p>
-          </div>
+
         </div>
 
         <div className="flex items-center gap-3 text-right">
@@ -399,7 +386,7 @@ export default function LoginPage() {
                     ) : (
                       <>
                         <LogIn size={15} />
-                        <span>Masuk ke Dashboard</span>
+                        <span>Masuk ke Sistem</span>
                       </>
                     )}
                   </button>
