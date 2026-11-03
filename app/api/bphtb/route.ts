@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
 import { formatNoSts } from "@/lib/sspd";
+import { sinkronStatusBayarDariSimpatda } from "@/lib/simpatda";
 
 export async function GET(req: Request) {
   try {
@@ -13,9 +14,21 @@ export async function GET(req: Request) {
     const statusBayar = searchParams.get("statusBayar");
     const tahun = searchParams.get("tahun");
     const ppat = searchParams.get("ppat");
+    const syncSimpatda = searchParams.get("syncSimpatda");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "15");
     const skip = (page - 1) * limit;
+
+    // Sinkronisasi otomatis & realtime ke SIMPATDA saat mengakses menu pembayaran (statusBerkas 4/5 atau syncSimpatda=1)
+    let simpatdaSync = null;
+    if (
+      syncSimpatda === "1" ||
+      statusBerkas === "4" ||
+      statusBerkas === "5" ||
+      statusBayar !== null
+    ) {
+      simpatdaSync = await sinkronStatusBayarDariSimpatda();
+    }
 
     const where: any = {};
 
@@ -67,6 +80,7 @@ export async function GET(req: Request) {
       limit,
       totalPages: Math.ceil(total / limit),
       data,
+      simpatdaSync,
     });
   } catch (error: any) {
     console.error("GET BPHTB error:", error);

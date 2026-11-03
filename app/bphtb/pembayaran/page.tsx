@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import DashboardShell from "@/components/DashboardShell";
 import Pagination from "@/components/Pagination";
@@ -83,54 +83,102 @@ export default function PembayaranBphtbPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>("");
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     setPage(1);
   }, [filterTab, tahun, search]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const statusBayarParam = filterTab === "lunas" ? "1" : "0";
-      const params = new URLSearchParams();
-      params.append("statusBayar", statusBayarParam);
-      params.append("statusBerkas", filterTab === "lunas" ? "5" : "4");
-      if (tahun) params.append("tahun", tahun);
-      params.append("limit", "2000");
+  const fetchData = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
 
-      const res = await fetch(`/api/bphtb?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        setData(json.data || []);
+      if (!silent) {
+        setLoading(true);
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setSyncing(true);
 
-  const handleSyncSimpatda = async () => {
-    setSyncing(true);
-    try {
-      const res = await fetch("/api/simpatda/sync-pembayaran", { method: "POST" });
-      const json = await res.json();
-      if (res.ok) {
-        toast.success(json.message || "Sinkronisasi SIMPATDA berhasil.");
-        await fetchData();
-      } else {
-        toast.error(json.error || "Gagal sinkronisasi dengan SIMPATDA.");
+      try {
+        const statusBayarParam = filterTab === "lunas" ? "1" : "0";
+        const params = new URLSearchParams();
+        params.append("statusBayar", statusBayarParam);
+        params.append("statusBerkas", filterTab === "lunas" ? "5" : "4");
+        if (tahun) params.append("tahun", tahun);
+        params.append("limit", "2000");
+        params.append("syncSimpatda", "1");
+
+        const res = await fetch(`/api/bphtb?${params.toString()}`, {
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setData(json.data || []);
+          setLastSyncTime(
+            new Date().toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          );
+
+          const syncInfo = json.simpatdaSync;
+          if (
+            syncInfo &&
+            (syncInfo.updatedToLunas > 0 || syncInfo.updatedToBelumBayar > 0)
+          ) {
+            const parts: string[] = [];
+            if (syncInfo.updatedToLunas > 0) {
+              parts.push(`${syncInfo.updatedToLunas} berkas LUNAS`);
+            }
+            if (syncInfo.updatedToBelumBayar > 0) {
+              parts.push(`${syncInfo.updatedToBelumBayar} berkas BELUM BAYAR`);
+            }
+            toast.success(
+              `Sinkronisasi Realtime SIMPATDA: ${parts.join(", ")} diperbarui otomatis.`
+            );
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+        setSyncing(false);
+        isFetchingRef.current = false;
       }
-    } catch (err: any) {
-      toast.error(err.message || "Terjadi kesalahan koneksi saat sinkronisasi.");
-    } finally {
-      setSyncing(false);
-    }
-  };
+    },
+    [filterTab, tahun]
+  );
 
+  // Initial load & filter change + Realtime Auto-Sync polling every 8 seconds & on window focus
   useEffect(() => {
-    fetchData();
-  }, [filterTab, tahun]);
+    fetchData({ silent: false });
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchData({ silent: true });
+      }
+    }, 8000);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        fetchData({ silent: true });
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+    };
+  }, [fetchData]);
 
   const handlePaymentSubmit = async () => {
     if (!selectedBerkas) return;
@@ -180,7 +228,7 @@ export default function PembayaranBphtbPage() {
         nilaiBayar: 0,
       });
       setSelectedBerkas(null);
-      fetchData();
+      fetchData({ silent: true });
     } catch (err) {
       toast.error("Terjadi kesalahan server");
     } finally {
@@ -210,7 +258,7 @@ export default function PembayaranBphtbPage() {
 
       toast.success(json.message || "Pembayaran berhasil dibatalkan. Berkas kembali Siap Bayar.");
       setBatalModal({ open: false, berkas: null, alasan: "" });
-      fetchData();
+      fetchData({ silent: true });
     } catch (err) {
       toast.error("Terjadi kesalahan server saat membatalkan pembayaran");
     } finally {
@@ -265,8 +313,26 @@ export default function PembayaranBphtbPage() {
           </p>
         </div>
 
-        {/* Action Controls: Year Filter, Status Tabs & Sync Button */}
+        {/* Action Controls: Year Filter, Status Tabs & Realtime SIMPATDA Status */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <div
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-xs"
+            title="Sinkronisasi status pembayaran dengan database SIMPATDA berjalan otomatis dan real-time"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Realtime SIMPATDA</span>
+            {syncing ? (
+              <RefreshCw size={12} className="animate-spin text-emerald-600" />
+            ) : lastSyncTime ? (
+              <span className="text-[10px] text-emerald-600/80 font-mono">
+                {lastSyncTime}
+              </span>
+            ) : null}
+          </div>
+
           <YearFilter
             selectedYear={tahun}
             onChange={(y) => {
@@ -297,16 +363,6 @@ export default function PembayaranBphtbPage() {
               Sudah Lunas
             </button>
           </div>
-
-          <button
-            onClick={handleSyncSimpatda}
-            disabled={syncing}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-xs shadow-blue-600/20 transition-all duration-150 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-            title="Sinkronkan status bayar dari tabel tr_tetap SIMPATDA secara otomatis"
-          >
-            <RefreshCw size={13} className={`shrink-0 ${syncing ? "animate-spin" : ""}`} />
-            <span>{syncing ? "Menyinkronkan..." : "Sinkron SIMPATDA"}</span>
-          </button>
         </div>
       </div>
 
