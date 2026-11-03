@@ -33,7 +33,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/favicon.png") ||
     pathname.startsWith("/icons") ||
     pathname.startsWith("/images") ||
-    pathname.startsWith("/uploads")
+    pathname.startsWith("/uploads") ||
+    /\.(png|jpe?g|svg|gif|webp|ico)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }

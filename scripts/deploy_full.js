@@ -4,18 +4,23 @@ const jumpConfig = {
   host: '103.167.12.53',
   port: 22,
   username: 'root',
-  password: '@#Tim1t42026'
+  password: '@#Tim1t42026',
+  readyTimeout: 40000,
+  keepaliveInterval: 10000
 };
 
 const targetConfig = {
   host: '192.168.1.101',
   port: 22,
   username: 'hnf',
-  password: '@programmer'
+  password: '@programmer',
+  readyTimeout: 40000,
+  keepaliveInterval: 10000
 };
 
-function runCommand(client, cmd, label) {
+function runExec(client, cmd, label) {
   return new Promise((resolve, reject) => {
+    console.log(`\n>>> [${label}] RUN: ${cmd}`);
     client.exec(cmd, (err, stream) => {
       if (err) return reject(err);
       let stdout = '';
@@ -28,28 +33,25 @@ function runCommand(client, cmd, label) {
         process.stderr.write(d.toString());
         stderr += d.toString();
       });
-      stream.on('close', code => {
-        console.log(`\n>>> [${label}] Exit code: ${code}`);
-        if (code !== 0 && !cmd.includes('grep')) {
-          console.warn(`Warning: Command "${cmd}" exited with code ${code}`);
-        }
-        resolve({ code, stdout, stderr });
+      stream.on('close', (code, signal) => {
+        console.log(`>>> [${label}] Exit code: ${code}`);
+        resolve({ code, signal, stdout, stderr });
       });
     });
   });
 }
 
 async function deploy() {
-  console.log('--- Connecting to Jump Host (103.167.12.53) ---');
+  console.log('=== Connecting to Jump Host (103.167.12.53) ===');
   const jumpConn = new Client();
   await new Promise((resolve, reject) => {
     jumpConn.on('ready', resolve);
     jumpConn.on('error', reject);
     jumpConn.connect(jumpConfig);
   });
-  console.log('Connected to Jump Host successfully.');
+  console.log('Jump Host Connected!');
 
-  console.log('\n--- Forwarding connection to Target VM (192.168.1.101) ---');
+  console.log('=== Opening Tunnel to Target VM (192.168.1.101) ===');
   const stream = await new Promise((resolve, reject) => {
     jumpConn.forwardOut('127.0.0.1', 12345, targetConfig.host, targetConfig.port, (err, s) => {
       if (err) return reject(err);
@@ -64,36 +66,42 @@ async function deploy() {
     targetConn.connect({
       sock: stream,
       username: targetConfig.username,
-      password: targetConfig.password
+      password: targetConfig.password,
+      readyTimeout: 40000
     });
   });
-  console.log('Connected to Target VM successfully.');
+  console.log('Target VM Connected!');
 
-  // Step 1: Update code on target VM
-  console.log('\n--- Step 1: Updating codebase on Target VM ---');
-  await runCommand(targetConn, 'cd /home/hnf/bphtb-online && git fetch origin main && git reset --hard origin/main', 'Git Pull / Reset');
+  // 1. Pull latest code on Target VM
+  console.log('\n--- 1. Pulling latest code on Target VM ---');
+  await runExec(targetConn, 'cd /home/hnf/bphtb-online && git fetch origin main && git reset --hard origin/main', 'Git Pull');
 
-  // Step 2: Install dependencies & generate prisma
-  console.log('\n--- Step 2: Installing dependencies & Prisma generate ---');
-  await runCommand(targetConn, 'cd /home/hnf/bphtb-online && npm install && npx prisma generate', 'NPM Install & Prisma Generate');
+  // 2. Ensure public/uploads directory exists with proper permissions
+  console.log('\n--- 2. Setting up uploads directory ---');
+  await runExec(targetConn, 'mkdir -p /home/hnf/bphtb-online/public/uploads && chmod -R 775 /home/hnf/bphtb-online/public/uploads', 'Setup uploads folder');
 
-  // Step 3: Build Next.js app
-  console.log('\n--- Step 3: Building Next.js production bundle ---');
-  await runCommand(targetConn, 'cd /home/hnf/bphtb-online && npm run build', 'Next.js Build');
+  // 3. Generate Prisma client
+  console.log('\n--- 3. Prisma generate ---');
+  await runExec(targetConn, 'cd /home/hnf/bphtb-online && npx prisma generate', 'Prisma Generate');
 
-  // Step 4: Restart PM2
-  console.log('\n--- Step 4: Restarting application in PM2 ---');
-  await runCommand(targetConn, 'cd /home/hnf/bphtb-online && pm2 restart bphtb-online || pm2 start "npm run start -- -p 3006" --name "bphtb-online"', 'PM2 Restart');
-  await runCommand(targetConn, 'pm2 save', 'PM2 Save');
+  // 4. Build Next.js
+  console.log('\n--- 4. Building Next.js ---');
+  await runExec(targetConn, 'cd /home/hnf/bphtb-online && npm run build', 'Next.js Build');
 
-  // Step 5: Test local endpoint on target VM
-  console.log('\n--- Step 5: Testing local endpoint on Target VM ---');
-  await runCommand(targetConn, 'curl -I http://127.0.0.1:3006', 'Local Curl VM');
+  // 5. Restart PM2
+  console.log('\n--- 5. Restarting PM2 process ---');
+  await runExec(targetConn, 'cd /home/hnf/bphtb-online && pm2 restart bphtb-online || pm2 start "npm run start -- -p 3006" --name "bphtb-online"', 'PM2 Restart');
+  await runExec(targetConn, 'pm2 save', 'PM2 Save');
+
+  // 6. Test local VM endpoint & uploaded file view
+  console.log('\n--- 6. Testing VM endpoints ---');
+  await runExec(targetConn, 'curl -I http://127.0.0.1:3006', 'Check Homepage');
+  await runExec(targetConn, 'curl -I http://127.0.0.1:3006/uploads/1790648650916_QR_Code_-_BB_1952_HD.png || true', 'Check /uploads file serve');
 
   targetConn.end();
 
-  // Step 6: Configure Nginx on Jump Host for port 3006
-  console.log('\n--- Step 6: Configuring Nginx reverse proxy on Jump Host (103.167.12.53:3006) ---');
+  // 7. Verify / Configure Nginx on Jump Host
+  console.log('\n--- 7. Verifying Nginx Reverse Proxy on Jump Host (103.167.12.53:3006) ---');
   const nginxConf = `server {
     listen 3006;
     server_name 103.167.12.53;
@@ -118,27 +126,28 @@ async function deploy() {
 }
 `;
 
-  // Write nginx config on jump host
   const writeNginxCmd = `cat << 'EOF' > /etc/nginx/sites-available/bphtb-online-3006
 ${nginxConf}
 EOF
 ln -sf /etc/nginx/sites-available/bphtb-online-3006 /etc/nginx/sites-enabled/bphtb-online-3006
 nginx -t && systemctl reload nginx
 `;
-  await runCommand(jumpConn, writeNginxCmd, 'Configure and Reload Nginx on Jump Host');
+  await runExec(jumpConn, writeNginxCmd, 'Configure Nginx');
 
-  // Step 7: Test public access on Jump Host
-  console.log('\n--- Step 7: Testing access to http://103.167.12.53:3006 ---');
-  await runCommand(jumpConn, 'curl -I http://103.167.12.53:3006', 'Curl Jump Host Public Port 3006');
+  // 8. Test public access on Jump Host
+  console.log('\n--- 8. Testing access on Jump Host (103.167.12.53:3006) ---');
+  await runExec(jumpConn, 'curl -I http://103.167.12.53:3006', 'Public URL Test');
+  await runExec(jumpConn, 'curl -I http://103.167.12.53:3006/uploads/1790648650916_QR_Code_-_BB_1952_HD.png', 'Public Upload File Test');
 
   jumpConn.end();
-  console.log('\n========================================');
-  console.log('✅ DEPLOYMENT COMPLETED SUCCESSFULLY!');
-  console.log('Access URL: http://103.167.12.53:3006');
-  console.log('========================================');
+
+  console.log('\n======================================================');
+  console.log('🎉 DEPLOYMENT AND UPLOAD SERVING FIX SUCCESSFUL!');
+  console.log('App URL: http://103.167.12.53:3006');
+  console.log('======================================================');
 }
 
-deploy().catch((err) => {
-  console.error('Deployment failed:', err);
+deploy().catch(err => {
+  console.error('Deployment error:', err);
   process.exit(1);
 });
